@@ -1,0 +1,27 @@
+{
+    "files.associations": {
+        "conn_mgr_connectivity.h": "c",
+        "conn_mgr_monitor.h": "c",
+        "socket.h": "c",
+        "array": "c",
+        "atomic": "c",
+        "bit": "c",
+        "*.tcc": "c",
+        "deque": "c",
+        "string": "c",
+        "unordered_map": "c",
+        "vector": "c",
+        "algorithm": "c",
+        "memory_resource": "c",
+        "string_view": "c",
+        "memory": "c",
+        "random": "c",
+        "initializer_list": "c",
+        "stdexcept": "c",
+        "tuple": "c",
+        "type_traits": "c"
+    },
+    "nrf-connect.debugging.bindings": {
+        "${workspaceFolder}/build": "Launch build"
+    }
+}
