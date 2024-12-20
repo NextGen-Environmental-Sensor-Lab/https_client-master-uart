@@ -38,6 +38,8 @@
 	"Host: " HTTPS_HOSTNAME ":" HTTPS_PORT "\r\n" \
 	"Content-Type: application/json\r\n"          \
 	"Content-Length: " // append contentstring length, \r\n and contentstring
+#define HTTP_POST_COMMANDS "{\"command\":\"appendRow\",\"sheet_name\":\"Sheet1\",\"values\":"
+#define HTTP_POST_COMMANDS_END "}"
 
 // #define HTTP_HEAD		\
 				// "HEAD / HTTP/1.1\r\n"	\
@@ -50,10 +52,12 @@
 #define RECV_BUF_SIZE 2048
 #define SEND_BUF_SIZE 2048
 #define TLS_SEC_TAG 123
+#define DATA_BUF_SIZE 2048
 
 static char send_buf[SEND_BUF_SIZE];
 static char recv_buf[RECV_BUF_SIZE];
 static int httpPostLen;
+static char data_buf[DATA_BUF_SIZE];
 
 static K_SEM_DEFINE(network_connected_sem, 0, 1);
 /* Certificate for `example.com` */
@@ -218,16 +222,22 @@ static void build_http_request(void)
 	// strcpy(send_buf, HTTP_GET);
 
 	strcpy(send_buf, HTTP_POST);
-	char httpPayload[] = "{\"command\":\"appendRow\",\"sheet_name\":\"Sheet1\",\"values\":\"1,2,3,4\"}";
-	int httpPayloadLen = sizeof(httpPayload)-1;
+
+	// function to put data string in data_buf
+
+	int httpPayloadLen = sizeof(HTTP_POST_COMMANDS) - 1;
+	httpPayloadLen = httpPayloadLen + sizeof(data_buf)-1 + sizeof(HTTP_POST_COMMANDS_END) - 1;
 
 	char temp[16];
-	// 
 	sprintf(temp, "%u", httpPayloadLen); // converts the number to string
 	strcat(send_buf, temp);
-	strcat(send_buf,"\r\n");
-	strcat(send_buf,"Connection: close\r\n\r\n");
-	strcat(send_buf, httpPayload);
+	strcat(send_buf, "\r\nConnection: close\r\n\r\n");
+	strcat(send_buf, HTTP_POST_COMMANDS);
+	strcat(send_buf,data_buf);
+	strcat(send_buf,HTTP_POST_COMMANDS_END);
+
+	//char httpPayload[] = "{\"command\":\"appendRow\",\"sheet_name\":\"Sheet1\",\"values\":\"1,2,3,4,nrf9160\"}";
+
 	httpPostLen = strlen(send_buf);
 
 	printf("send_buf size: %u\nsend_buf: \n%s\n", httpPostLen, send_buf);
@@ -256,8 +266,7 @@ static void send_http_request(void)
 		return;
 	}
 
-	inet_ntop(res->ai_family, &((struct sockaddr_in *)(res->ai_addr))->sin_addr, peer_addr,
-			  INET6_ADDRSTRLEN);
+	inet_ntop(res->ai_family, &((struct sockaddr_in *)(res->ai_addr))->sin_addr, peer_addr, INET6_ADDRSTRLEN);
 	printk("Resolved %s (%s)\n", peer_addr, net_family2str(res->ai_family));
 
 	if (IS_ENABLED(CONFIG_SAMPLE_TFM_MBEDTLS))
@@ -305,6 +314,7 @@ static void send_http_request(void)
 
 	printf("Sent %d bytes\n", off);
 
+	/* RECEIVE INTO BUFFER */
 	off = 0;
 	do
 	{
@@ -314,10 +324,12 @@ static void send_http_request(void)
 			printk("recv() failed, err %d\n", errno);
 			goto clean_up;
 		}
+		//printf("%.*s...",bytes,&recv_buf[off]);
 		off += bytes;
-	} while (bytes != 0 /* peer closed connection */);
+	} while (bytes != 0 ); /* peer closed connection */
 
-	printk("Received %d bytes\n", off);
+	// printk("Received %d bytes\n", off);
+	printf("Received %d bytes\n", off);
 
 	/* Make sure recv_buf is NULL terminated (for safe use with strstr) */
 	if (off < sizeof(recv_buf))
@@ -340,7 +352,8 @@ static void send_http_request(void)
 	// printk("\n\n%s\n\n", recv_buf);
 	printf(">\n>\n%s>\n>\n", recv_buf);
 
-	printk("Finished, closing socket.\n");
+	// printk("Finished, closing socket.\n");
+	printf("Finished, closing socket.\n");
 
 clean_up:
 	freeaddrinfo(res);
@@ -350,6 +363,7 @@ clean_up:
 int main(void)
 {
 	int err;
+	strcat(data_buf,"10,20,30,40,50"); //dummy data
 
 	printk("HTTPS client sample started\n\r");
 
