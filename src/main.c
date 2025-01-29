@@ -38,8 +38,8 @@
 	"Host: " HTTPS_HOSTNAME ":" HTTPS_PORT "\r\n" \
 	"Content-Type: application/json\r\n"          \
 	"Content-Length: " // append contentstring length, \r\n and contentstring
-#define HTTP_POST_COMMANDS "{\"command\":\"appendRow\",\"sheet_name\":\"Sheet1\",\"values\":"
-#define HTTP_POST_COMMANDS_END "}"
+#define HTTP_POST_COMMANDS "{\"command\":\"appendRow\",\"sheet_name\":\"Sheet1\",\"values\":\""
+#define HTTP_POST_COMMANDS_END "\"}"
 
 // #define HTTP_HEAD		\
 				// "HEAD / HTTP/1.1\r\n"	\
@@ -225,8 +225,7 @@ static void build_http_request(void)
 
 	// function to put data string in data_buf
 
-	int httpPayloadLen = sizeof(HTTP_POST_COMMANDS) - 1;
-	httpPayloadLen = httpPayloadLen + sizeof(data_buf)-1 + sizeof(HTTP_POST_COMMANDS_END) - 1;
+	int httpPayloadLen = strlen(HTTP_POST_COMMANDS)+ strlen(data_buf) + strlen(HTTP_POST_COMMANDS_END);
 
 	char temp[16];
 	sprintf(temp, "%u", httpPayloadLen); // converts the number to string
@@ -363,7 +362,7 @@ clean_up:
 int main(void)
 {
 	int err;
-	strcat(data_buf,"10,20,30,40,50"); //dummy data
+	strcat(data_buf,"11,22,33,44,55"); //dummy data
 
 	printk("HTTPS client sample started\n\r");
 
