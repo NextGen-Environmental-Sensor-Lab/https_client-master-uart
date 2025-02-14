@@ -19,7 +19,13 @@
         "initializer_list": "c",
         "stdexcept": "c",
         "tuple": "c",
-        "type_traits": "c"
+        "type_traits": "c",
+        "unistd.h": "c",
+        "https_handler.h": "c",
+        "kernel.h": "c",
+        "string.h": "c",
+        "tls_credentials.h": "c",
+        "uart_handler.h": "c"
     },
     "nrf-connect.debugging.bindings": {
         "${workspaceFolder}/build": "Launch build"
