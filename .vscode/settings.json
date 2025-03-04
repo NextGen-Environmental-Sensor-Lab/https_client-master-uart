@@ -25,7 +25,8 @@
         "kernel.h": "c",
         "string.h": "c",
         "tls_credentials.h": "c",
-        "uart_handler.h": "c"
+        "uart_handler.h": "c",
+        "netdb.h": "c"
     },
     "nrf-connect.debugging.bindings": {
         "${workspaceFolder}/build": "Launch build"

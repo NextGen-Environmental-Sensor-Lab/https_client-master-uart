@@ -42,7 +42,6 @@ BUILD_ASSERT(sizeof(cert) < KB(4), "Certificate too large");
 int cert_provision(void)
 {
 	int err;
-
 	printk("Provisioning certificate\n");
 
 #if CONFIG_MODEM_KEY_MGMT
@@ -73,7 +72,8 @@ int cert_provision(void)
 
 		printk("Certificate mismatch\n");
 		err = modem_key_mgmt_delete(TLS_SEC_TAG, MODEM_KEY_MGMT_CRED_TYPE_CA_CHAIN);
-		if (err) {
+		if (err)
+		{
 			printk("Failed to delete existing certificate, err %d\n", err);
 		}
 	}
@@ -183,7 +183,8 @@ static void lte_lc_handler(const struct lte_lc_evt *const evt)
 	}
 }
 
-static void send_http_request(void) {
+static void send_http_request(void)
+{
 	int err;
 	int fd;
 	int bytes;
@@ -264,9 +265,9 @@ static void send_http_request(void) {
 			printk("recv() failed, err %d\n", errno);
 			goto clean_up;
 		}
-		//printf("%.*s...",bytes,&recv_buf[off]);
+		// printf("%.*s...",bytes,&recv_buf[off]);
 		off += bytes;
-	} while (bytes != 0 ); /* peer closed connection */
+	} while (bytes != 0); /* peer closed connection */
 
 	// printk("Received %d bytes\n", off);
 	printf("Received %d bytes\n", off);
@@ -300,43 +301,48 @@ clean_up:
 	(void)close(fd);
 }
 
-int https_init(void) {
+int https_init(void)
+{
 	int err;
 
-    printk("HTTPS thread started....\r\n");
+	printk("HTTPS thread started....\r\n");
 
-    err = nrf_modem_lib_init();
-    if (err < 0) {
-        printk("Failed to initialize modem library!\n");
-        return err;
-    }
-
-    err = cert_provision();
-    if (err)
-    {
-        printk("Could not provision root CA to %d", TLS_SEC_TAG);
+	err = nrf_modem_lib_init();
+	if (err < 0)
+	{
+		printk("Failed to initialize modem library!\n");
 		return err;
-    }
+	}
 
-    printk("LTE Link Connecting ...\n");
-    err = lte_lc_connect_async(lte_lc_handler);
-    if (err)
-    {
-        printk("LTE link could not be established.");
+	err = cert_provision();
+	if (err)
+	{
+		printk("Could not provision root CA to %d", TLS_SEC_TAG);
 		return err;
-    }
+	}
 
-    k_sem_take(&network_connected_sem, K_FOREVER);
+	printk("LTE Link Connecting ...\n");
+	err = lte_lc_connect_async(lte_lc_handler);
+	if (err)
+	{
+		printk("LTE link could not be established.");
+		return err;
+	}
 
-    return 0;
+	k_sem_take(&network_connected_sem, K_FOREVER);
+
+	return 0;
 }
 
-void https_thread_entry(void *a, void *b, void *c) {
-    while (1) {
+void https_thread_entry(void *a, void *b, void *c)
+{
+	while (1)
+	{
 		/* Wait forever until there is a message in the https_send_queue */
-        if (k_msgq_get(&https_send_queue, &send_buf, K_FOREVER) == 0) {
-            send_http_request();
-        } 
-        k_sleep(K_SECONDS(1));
-    }
+		if (k_msgq_get(&https_send_queue, &send_buf, K_FOREVER) == 0)
+		{
+			send_http_request();
+		}
+		k_sleep(K_SECONDS(1));
+	}
 }
