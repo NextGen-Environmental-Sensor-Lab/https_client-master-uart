@@ -1,7 +1,9 @@
 #ifndef UART_HANDLER_H
 #define UART_HANDLER_H
 
-int uart_init(void);
-void print_uart(char *data);
+#include <zephyr/device.h>
+
+int uart_init(const struct device *dev);
+void print_uart(const struct device *dev, char *data);
 
 #endif

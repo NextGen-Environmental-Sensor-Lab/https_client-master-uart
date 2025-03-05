@@ -1,22 +1,21 @@
 #include "data_acq.h"
+#include "uart_handler.h"
 #include <zephyr/kernel.h>
 
 /* Semaphore to get a reading. Initial value is 0 and max is 1 */
-K_SEM_DEFINE(get_rg15_reading_sem, 0, 1);
+K_SEM_DEFINE(rg15_ready_sem, 0, 1);
+
+extern const struct device *const my_uart1;
 
 void data_acq_entry(void *a, void *b, void *c) {
-    
+    k_sem_take(&rg15_ready_sem, K_FOREVER);
+    /* Give it a couple of seconds after reboot */
+    k_sleep(K_SECONDS(3));
+    print_uart(my_uart1, "P\r\n");
+    k_sleep(K_SECONDS(1));
     while(1) {
-        k_sem_give(&get_rg15_reading_sem);
+        printk("Polling measurement from RG-15...\r\n");
+        print_uart(my_uart1, "R\r\n");
         k_sleep(K_SECONDS(DEFAULT_DATA_ACQ_PERIODICITY));
-    }
-}
-
-void rg15_acq_thread(void *a, void *b, void *c) {
-
-    while(1) {
-        if (k_sem_take(&get_rg15_reading_sem, K_FOREVER) == 0) {
-            /* Do RG-15 data acq here */
-        }
     }
 }

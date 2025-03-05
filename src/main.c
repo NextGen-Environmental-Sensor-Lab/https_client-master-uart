@@ -21,11 +21,14 @@ extern void uart_thread_entry(void *, void *, void *);
 extern void https_thread_entry(void *, void *, void *);
 extern void data_acq_entry(void *, void *, void *);
 
+extern const struct device *const my_uart0;
+extern const struct device *const my_uart1;
+
 int main(void) {
 	int ret;
 
-	/* Initialize UART */
-	ret = uart_init();
+	/* Initialize the UART device where the data is received */
+	ret = uart_init(my_uart1);
 	if (ret != 0) {
 		printk("FATAL ERROR!\n");
 		return -1;
@@ -49,9 +52,9 @@ int main(void) {
 		NULL, NULL, NULL, 7, 0, K_NO_WAIT);
 
 	/* Start Data acq thread */
-	// k_thread_create(&data_acq_thread, data_acq_thread_stack,
-	// 	K_THREAD_STACK_SIZEOF(data_acq_thread_stack), data_acq_entry,
-	// 	NULL, NULL, NULL, 5, 0, K_NO_WAIT);
+	k_thread_create(&data_acq_thread, data_acq_thread_stack,
+		K_THREAD_STACK_SIZEOF(data_acq_thread_stack), data_acq_entry,
+		NULL, NULL, NULL, 5, 0, K_NO_WAIT);
 
 	while (1) {
 		k_sleep(K_FOREVER);

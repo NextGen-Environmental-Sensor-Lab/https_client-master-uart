@@ -1,3 +1,7 @@
 &sim_select {
 	sim = "external";
 };
+
+&uart1 {
+	current-speed = < 9600 >;
+};
