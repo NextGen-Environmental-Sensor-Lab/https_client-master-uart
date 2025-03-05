@@ -27,8 +27,11 @@ static const struct device *const my_uart1 = DEVICE_DT_GET(DEV_OTHER);
 
 /* receive buffer used in UART ISR callback */
 static char tx_buf[MSG_SIZE];
-static char rx_buf[MSG_SIZE];
-static int rx_buf_pos;
+static char clean_buff[MSG_SIZE];
+static char rx_buf0[MSG_SIZE];
+static int rx_buf_pos0;
+static char rx_buf1[MSG_SIZE];
+static int rx_buf_pos1;
 
 /*
  * Read characters from UART until line end is detected. Afterwards push the
@@ -45,16 +48,16 @@ void uart0_cb(const struct device *dev, void *user_data) {
 	}
 	/* read until FIFO empty */
 	while (uart_fifo_read(my_uart0, &c, 1) == 1) {
-		if ((c == '\n' || c == '\r') && rx_buf_pos > 0) {
+		if ((c == '\n' || c == '\r') && rx_buf_pos0 > 0) {
 			/* terminate string */
-			rx_buf[rx_buf_pos] = '\0';
+			rx_buf0[rx_buf_pos0] = '\0';
 			/* if queue is full, message is silently dropped */
-			k_msgq_put(&uart0_msgq, &rx_buf, K_NO_WAIT);
+			k_msgq_put(&uart0_msgq, &rx_buf0, K_NO_WAIT);
 			/* reset the buffer (it was copied to the msgq) */
-			rx_buf_pos = 0;
+			rx_buf_pos0 = 0;
 		}
-		else if (rx_buf_pos < (sizeof(rx_buf) - 1)) {
-			rx_buf[rx_buf_pos++] = c;
+		else if (rx_buf_pos0 < (sizeof(rx_buf0) - 1)) {
+			rx_buf0[rx_buf_pos0++] = c;
 		}
 	}
 }
@@ -69,16 +72,16 @@ void uart1_cb(const struct device *dev, void *user_data) {
 	}
 	/* read until FIFO empty */
 	while (uart_fifo_read(my_uart1, &c, 1) == 1) {
-		if ((c == '\n' || c == '\r') && rx_buf_pos > 0) {
+		if ((c == '\n' || c == '\r') && rx_buf_pos1 > 0) {
 			/* terminate string */
-			rx_buf[rx_buf_pos] = '\0';
+			rx_buf1[rx_buf_pos1] = '\0';
 			/* if queue is full, message is silently dropped */
-			k_msgq_put(&uart1_msgq, &rx_buf, K_NO_WAIT);
+			k_msgq_put(&uart1_msgq, &rx_buf1, K_NO_WAIT);
 			/* reset the buffer (it was copied to the msgq) */
-			rx_buf_pos = 0;
+			rx_buf_pos1 = 0;
 		}
-		else if (rx_buf_pos < (sizeof(rx_buf) - 1)) {
-			rx_buf[rx_buf_pos++] = c;
+		else if (rx_buf_pos1 < (sizeof(rx_buf1) - 1)) {
+			rx_buf1[rx_buf_pos1++] = c;
 		}
 		/* else: characters beyond buffer size are dropped */
 	}
@@ -129,6 +132,7 @@ int uart_init(void) {
 
 static char buff[1024];
 
+
 void uart_thread_entry(void *a, void *b, void *c) {
 	print_uart0("UART0: Write something and and press enter to send to google sheets:\r\n");
 	// print_uart1("UART1: Write something and and press enter to send to uart0:\r\n");
@@ -137,7 +141,21 @@ void uart_thread_entry(void *a, void *b, void *c) {
 		/* Wait until there is a message in the uart0_msgq */
 		if (k_msgq_get(&uart0_msgq, &tx_buf, K_FOREVER) == 0) {
 			printk("mssg from uart0: %s\r\n", tx_buf);
-            int ret = snprintf(buff, sizeof(buff), HTTP_POST_MESSAGE, tx_buf);
+
+			int idx = 0;
+			char *data_ptr;
+			
+			data_ptr = &tx_buf[0];
+			memset(clean_buff, '\0', sizeof(clean_buff));
+			while(*data_ptr != '\0' && idx < (sizeof(tx_buf) - 1)) {
+				if ((*data_ptr != '\r') && (*data_ptr != '\n')) {
+					clean_buff[idx] = *data_ptr;
+					idx++;
+				}
+				data_ptr++;
+			}
+
+            int ret = snprintf(buff, sizeof(buff), HTTP_POST_MESSAGE, clean_buff);
             ret = snprintf(uart_send, sizeof(uart_send), HTTPS_POST_REGULAR_UPLOAD, 
                                                             HTTPS_TARGET,
                                                             HTTPS_HOSTNAME,
