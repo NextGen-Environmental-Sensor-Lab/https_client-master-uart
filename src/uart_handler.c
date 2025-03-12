@@ -37,6 +37,12 @@ static int rx_buf_pos0;
 static char rx_buf1[MSG_SIZE];
 static int rx_buf_pos1;
 
+/* RG-15 measurements */
+static double acc;
+static double event_acc;
+static double total_acc;
+static double r_int;
+
 /*
  * Read characters from UART until line end is detected. Afterwards push the
  * data to the message queue.
@@ -149,10 +155,7 @@ static void parse_and_queue_https_message(void) {
 	};
 }
 
-static double acc;
-static double event_acc;
-static double total_acc;
-static double r_int;
+
 
 void parse_rg15_and_queue_https_message() {
 	/* Acc 0.001 in, EventAcc 0.019 in, TotalAcc 0.019 in, RInt 0.082 iph */
@@ -205,18 +208,25 @@ void parse_rg15_and_queue_https_message() {
 void uart_thread_entry(void *a, void *b, void *c) {
 	print_uart(my_uart0, "Uart thread started\r\nEvery line received on uart device initialized using the function \"uart_init\" is sent to google sheets!\r\n");
 
+	printk("Force rebooting RG-15...\r\n");
+	print_uart(my_uart1, "K\n");
+	
+
+
 	while (1) {
 		/* Check if there is a message in the uart0_msgq */
 		if (k_msgq_get(&uart0_msgq, &tx_buf, K_NO_WAIT) == 0) {
 			printk("mssg from uart0: %s\r\n", tx_buf);
-			parse_and_queue_https_message();
+			// parse_and_queue_https_message();
+			print_uart(my_uart1, tx_buf);
+			print_uart(my_uart1, "\n");
 		}
 		/* Check if there is a message in the uart1_msgq
 		 * RG-15 messages are received via UART1 
 		 */
 		if (k_msgq_get(&uart1_msgq, &tx_buf, K_NO_WAIT) == 0) {
-			printk("mssg from uart1: %s\r\n", tx_buf);
-			parse_rg15_and_queue_https_message();
+			printk("mssg from uart1: %s\r\n", tx_buf);	
+			// parse_rg15_and_queue_https_message();
 		}
         /* Give control to other threads to do their thing */
         k_sleep(K_MSEC(100));

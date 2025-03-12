@@ -27,29 +27,36 @@ extern const struct device *const my_uart1;
 int main(void) {
 	int ret;
 
-	/* Initialize the UART device where the data is received */
+	/* Initialize the UART console */
+	ret = uart_init(my_uart0);
+	if (ret != 0) {
+		printk("FATAL ERROR!\n");
+		return -1;
+	}
+
+	/* Initialize the RG-15 UART */
 	ret = uart_init(my_uart1);
 	if (ret != 0) {
 		printk("FATAL ERROR!\n");
 		return -1;
 	}
 
-	/* Initialize HTTPS Client */
-	ret = https_init();
-	if (ret != 0) {
-		printk("FATAL ERROR\n");
-		return -1;
-	}
+	// /* Initialize HTTPS Client */
+	// ret = https_init();
+	// if (ret != 0) {
+	// 	printk("FATAL ERROR\n");
+	// 	return -1;
+	// }
 
 	/* Start UART thread */
 	k_thread_create(&uart_thread, uart_thread_stack,
 		K_THREAD_STACK_SIZEOF(uart_thread_stack), uart_thread_entry,
 		NULL, NULL, NULL, 6, 0, K_NO_WAIT);
 
-	/* Start HTTPS thread */
-	k_thread_create(&https_thread, https_thread_stack,
-		K_THREAD_STACK_SIZEOF(https_thread_stack), https_thread_entry,
-		NULL, NULL, NULL, 7, 0, K_NO_WAIT);
+	// /* Start HTTPS thread */
+	// k_thread_create(&https_thread, https_thread_stack,
+	// 	K_THREAD_STACK_SIZEOF(https_thread_stack), https_thread_entry,
+	// 	NULL, NULL, NULL, 7, 0, K_NO_WAIT);
 
 	/* Start Data acq thread */
 	k_thread_create(&data_acq_thread, data_acq_thread_stack,
