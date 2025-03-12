@@ -5,7 +5,9 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/uart.h>
 
+#include <math.h>
 #include <string.h>
+#include <stdio.h>
 
 #define DEV_CONSOLE DT_NODELABEL(uart0)
 #define DEV_OTHER DT_NODELABEL(uart1)
@@ -38,10 +40,10 @@ static char rx_buf1[MSG_SIZE];
 static int rx_buf_pos1;
 
 /* RG-15 measurements */
-static double acc;
-static double event_acc;
-static double total_acc;
-static double r_int;
+static float acc;
+static float event_acc;
+static float total_acc;
+static float r_int;
 
 /*
  * Read characters from UART until line end is detected. Afterwards push the
@@ -161,72 +163,104 @@ void parse_rg15_and_queue_https_message() {
 	/* Acc 0.001 in, EventAcc 0.019 in, TotalAcc 0.019 in, RInt 0.082 iph */
 	int idx = 0;
 	char *data_ptr;
+	int ret;
+
+	if (strstr(tx_buf, "Acc") == NULL) {
+		return;
+	}
 	
 	data_ptr = &tx_buf[0];
 	memset(clean_buff, '\0', sizeof(clean_buff));
 	while(*data_ptr != '\0' && idx < (sizeof(tx_buf) - 1)) {
 		if ((*data_ptr != '\r') && (*data_ptr != '\n') && (*data_ptr != ' ')) {
-			clean_buff[idx] = *data_ptr;
-			idx++;
+			if (isdigit(*data_ptr) || (*data_ptr == '.') || (*data_ptr == ',')) {
+				clean_buff[idx] = *data_ptr;
+				idx++;
+			}
 		}
 		data_ptr++;
 	}
+	clean_buff[idx] = '\0';
 
 	printk("cleaned buffer is: %s\r\n", clean_buff);
-	/* This is a reading from RG-15 */
-	if (strstr(clean_buff, "Acc") != NULL) {
-		/* To DEBUG */
-		if (sscanf(clean_buff, "Acc%lfmm,EventAcc%lfmm,TotalAcc%lfmm,RInt%lfmmph", &acc, &event_acc, &total_acc, &r_int) == 4) {
-			snprintf(clean_buff, sizeof(clean_buff), "%lf,%lf,%lf,%lf", acc, event_acc, total_acc, r_int);
-			printk("data is: %s\r\n", clean_buff);
-			int ret = snprintf(buff, sizeof(buff), HTTP_POST_MESSAGE, clean_buff);
-			ret = snprintf(uart_send, sizeof(uart_send), HTTPS_POST_REGULAR_UPLOAD, 
-															HTTPS_TARGET,
-															HTTPS_HOSTNAME,
-															HTTPS_PORT,
-															ret,
-															buff);
+	ret = snprintf(buff, sizeof(buff), HTTP_POST_MESSAGE, clean_buff);
+	ret = snprintf(uart_send, sizeof(uart_send), HTTPS_POST_REGULAR_UPLOAD, 
+													HTTPS_TARGET,
+													HTTPS_HOSTNAME,
+													HTTPS_PORT,
+													ret,
+													buff);
 
-			if (ret > 0 && k_msgq_put(&https_send_queue, uart_send, K_NO_WAIT) == 0) {
-					printk("successfully queued a messaged from uart thread to https thread: \n%s", uart_send);
-			};
-		}
- 
-	} else {
-		/* Check whether RG-15 was setup */
-		if (!rg_15_setup_done) {
-			printk("Force rebooting RG-15...\r\n");
-			print_uart(my_uart1, "K\r\n");
-			rg_15_setup_done = true;
-			k_sem_give(&rg15_ready_sem);
-		}
-		/* Else it is the boot banner. Todo: parse RG-15 boot message and reset cfg */
-	}
+	if (ret > 0 && k_msgq_put(&https_send_queue, uart_send, K_NO_WAIT) == 0) {
+			printk("successfully queued a messaged from uart thread to https thread: \n%s", uart_send);
+	};
+	// /* This is a reading from RG-15 */
+	// if (strstr(clean_buff, "Acc") != NULL) {
+	// 	/* To DEBUG 			Acc6.72mm,EventAcc6.72mm,TotalAcc36.48mm,RInt1.42mmph */				
+	// 	char *token = strtok(clean_buff, ",");
+
+	// 	// Parse each token
+	// 	if (token != NULL) {
+	// 		// Extract value before "mm" and convert it to double
+	// 		sscanf(token, "Acc%fmm", &acc);
+	// 		token = strtok(NULL, ",");  // Move to next token
+	// 	}
+
+	// 	if (token != NULL) {
+	// 		sscanf(token, "EventAcc%fmm", &event_acc);
+	// 		token = strtok(NULL, ",");
+	// 	}
+
+	// 	if (token != NULL) {
+	// 		sscanf(token, "TotalAcc%fmm", &total_acc);
+	// 		token = strtok(NULL, ",");
+	// 	}
+
+	// 	if (token != NULL) {
+	// 		sscanf(token, "RInt%fmmph", &r_int);
+	// 	}
+
+	// 	// Output the parsed values
+	// 	printf("Acc: %.2f\n", acc);
+	// 	printf("EventAcc: %.2f\n", event_acc);
+	// 	printf("TotalAcc: %.2f\n", total_acc);
+	// 	printf("RInt: %.2f\n", r_int);
+		// int ret = sscanf(clean_buff, "%*sAcc%lfmm,EventAcc%lfmm,TotalAcc%lfmm,RInt%lfmmph%*s", &acc, &event_acc, &total_acc, &r_int);
+		// printk("ret is :%d\r\n", ret);
+		// if (ret == 4) {
+		// 	snprintf(clean_buff, sizeof(clean_buff), "%lf,%lf,%lf,%lf", acc, event_acc, total_acc, r_int);
+		// 	printk("data is: %s\r\n", clean_buff);
+
+		// }
+	// } 
+	// else if (!rg_15_setup_done && (strstr(clean_buff, "Ready") != NULL)) {
+	// 		rg_15_setup_done = true;
+	// 		k_sem_give(&rg15_ready_sem);
+	// }
 
 }
 
 void uart_thread_entry(void *a, void *b, void *c) {
-	print_uart(my_uart0, "Uart thread started\r\nEvery line received on uart device initialized using the function \"uart_init\" is sent to google sheets!\r\n");
+	// print_uart(my_uart0, "Uart thread started\r\nEvery line received on uart device initialized using the function \"uart_init\" is sent to google sheets!\r\n");
 
 	printk("Force rebooting RG-15...\r\n");
 	print_uart(my_uart1, "K\n");
-	
 
-
+	k_sem_give(&rg15_ready_sem);
 	while (1) {
 		/* Check if there is a message in the uart0_msgq */
 		if (k_msgq_get(&uart0_msgq, &tx_buf, K_NO_WAIT) == 0) {
 			printk("mssg from uart0: %s\r\n", tx_buf);
 			// parse_and_queue_https_message();
-			print_uart(my_uart1, tx_buf);
-			print_uart(my_uart1, "\n");
+			// print_uart(my_uart1, tx_buf);
+			// print_uart(my_uart1, "\n");
 		}
 		/* Check if there is a message in the uart1_msgq
 		 * RG-15 messages are received via UART1 
 		 */
 		if (k_msgq_get(&uart1_msgq, &tx_buf, K_NO_WAIT) == 0) {
 			printk("mssg from uart1: %s\r\n", tx_buf);	
-			// parse_rg15_and_queue_https_message();
+			parse_rg15_and_queue_https_message();
 		}
         /* Give control to other threads to do their thing */
         k_sleep(K_MSEC(100));

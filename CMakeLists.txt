@@ -24,6 +24,8 @@ target_sources(app PRIVATE
                 src/main.c
                 src/https_handler.h
                 src/https_handler.c
+                # src/rg15.h
+                # src/rg15.c
                 src/uart_handler.h
                 src/uart_handler.c
                 src/data_acq.h

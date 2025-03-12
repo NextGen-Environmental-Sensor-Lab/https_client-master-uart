@@ -1,12 +1,19 @@
 #include "rg15.h"
 #include <stddef.h>
 #include <string.h>
+#include <zephyr/device.h>
+#include <zephyr/kernel.h>
 
 #include "errno.h"
+#include "uart_handler.h"
 
 #define RG15_COMMAND_TABLE_LEN 32
 #define MAX_RG15_RESPONSE_LEN  512
 #define MAX_RG15_UNITS_LEN     16
+
+K_SEM_DEFINE(rg15_response_ready_sem, 0, 1);
+
+//extern const struct device *const my_uart1;
 
 typedef struct rg15_command_t {
     const char *cmd_fmt;
@@ -30,12 +37,12 @@ static rg15_command_t const rg15_command_table[RG15_COMMAND_TABLE_LEN] = {
     {"A",       "Acc%lf%s",                                         rg15_acc_data_cb},
     {"R",       "Acc%lf%s,EventAcc%lf%s,TotalAcc%lf%s,RInt%lf%s",   rg15_meas_data_cb},
     {"K",       "Reset%c",                                          rg15_reset_device_cb},
-    {"B %lu",   "Baud%lu",                                          rg15_baud_cb},
-    {"%c",      "%c",                                               rg15_op_mode_cb},
-    {"%c",      "%c",                                               rg15_resolution_cb},
-    {"%c",      "%c",                                               rg15_units_cb},
-    {NULL,      "LensBad",                                          rg15_lens_bad_cb},
-    {NULL,      "EmSat",                                            rg15_emitter_sat_cb},
+    // {"B %lu",   "Baud%lu",                                          rg15_baud_cb},
+    // {"%c",      "%c",                                               rg15_op_mode_cb},
+    // {"%c",      "%c",                                               rg15_resolution_cb},
+    // {"%c",      "%c",                                               rg15_units_cb},
+    // {NULL,      "LensBad",                                          rg15_lens_bad_cb},
+    // {NULL,      "EmSat",                                            rg15_emitter_sat_cb},
     {NULL,      NULL,                                               NULL}
 };
 
@@ -159,64 +166,74 @@ static int rg15_reset_device_cb(struct rg15_t *rg15, const char *exp_rsp, const 
     ret = sscanf(buff, exp_rsp, &c);
     if (ret != -1) {
         printk("ERROR: Expected respose format Reset 'D', got %s", recv_rsp);
+        rg15->state = RG15_ERROR;
         return -EINVAL;
     }
-    
-    return ret;
+
+    return 0;
 }
 
 static int rg15_baud_cb(struct rg15_t *rg15, const char *exp_rsp, const char *recv_rsp) {
     if (rg15 == NULL) {
         return -EINVAL;
     }
-    int ret;
-
-    return ret;
+    return 0;
 }
 
 static int rg15_op_mode_cb(struct rg15_t *rg15, const char *exp_rsp, const char *recv_rsp) {
     if (rg15 == NULL) {
         return -EINVAL;
     }
-    int ret;
-
-    return ret;
+    return 0;
 }
 
 static int rg15_resolution_cb(struct rg15_t *rg15, const char *exp_rsp, const char *recv_rsp) {
     if (rg15 == NULL) {
         return -EINVAL;
     }
-    int ret;
-
-    return ret;
+    return 0;
 }
 
 static int rg15_units_cb(struct rg15_t *rg15, const char *exp_rsp, const char *recv_rsp) {
     if (rg15 == NULL) {
         return -EINVAL;
     }
-    int ret;
-
-    return ret;
+    return 0;
 }
 
 static int rg15_lens_bad_cb(struct rg15_t *rg15, const char *exp_rsp, const char *recv_rsp) {
     if (rg15 == NULL) {
         return -EINVAL;
     }
-    int ret;
-
-    return ret;
+    return 0;
 }
 
 static int rg15_emitter_sat_cb(struct rg15_t *rg15, const char *exp_rsp, const char *recv_rsp) {
     if (rg15 == NULL) {
         return -EINVAL;
     }
-    int ret;
+    return 0;
+}
 
-    return ret;
+static void rg15_exec_command(struct rg15_t *rg15, const char *cmd) {
+    if (rg15 == NULL || cmd == NULL) {
+        return -EINVAL;
+    }
+    int idx;
+    int found = 0;
+
+    for (int idx = 0; rg15_command_table[idx].func != NULL; idx++) {
+		if (strstr(cmd, rg15_command_table[idx].cmd_fmt) != NULL) {
+			found = 1;
+			break;
+		}
+	}
+    if (!found) {
+        printk("Invalid RG15 command!\r\n");
+        return;
+    }
+    print_uart(my_uart1, cmd);
+    k_sem_take(&rg15_response_ready_sem, K_SECONDS(10));
 }
 
 /** Initialize RG-15 instance */
@@ -224,9 +241,7 @@ int rg15_init(struct rg15_t *rg15,  rg15_mode_t mode, rg15_resolution_t res, rg1
     if (rg15 == NULL) {
         return -EINVAL;
     }
-    int ret;
-
-    return ret;
+    return 0;
 }
 
 /** Set Operational mode */
@@ -234,9 +249,7 @@ int rg15_set_op_mode(struct rg15_t *rg15, rg15_mode_t mode) {
     if (rg15 == NULL) {
         return -EINVAL;
     }
-    int ret;
-
-    return ret;
+    return 0;
 }
 
 /** Force set resolution */
@@ -244,9 +257,7 @@ int rg15_set_resolution(struct rg15_t *rg15, rg15_resolution_t res) {
     if (rg15 == NULL) {
         return -EINVAL;
     }
-    int ret;
-
-    return ret;
+    return 0;
 }
 
 /** Force set units */
@@ -254,9 +265,7 @@ int rg15_set_units(struct rg15_t *rg15, rg15_units_t units) {
     if (rg15 == NULL) {
         return -EINVAL;
     }
-    int ret;
-
-    return ret;
+    return 0;
 }
 
 /** Poll a reading from RG-15, also sets to polling mode if not already */
@@ -264,9 +273,7 @@ int rg15_poll_reading(struct rg15_t *rg15, rg15_data_t *data) {
     if (rg15 == NULL) {
         return -EINVAL;
     }
-    int ret;
-
-    return ret;
+    return 0;
 }
 
 /** Reset RG-15, user must call rg15_init again after this to initialize desired configuration */
@@ -274,7 +281,5 @@ int rg15_reset_device(struct rg15_t *rg15) {
     if (rg15 == NULL) {
         return -EINVAL;
     }
-    int ret;
-
-    return ret;
+    return 0;
 }
