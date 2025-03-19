@@ -48,7 +48,7 @@ int cert_provision(void)
 	bool exists;
 	int mismatch;
 
-	/* It may be sufficient for you application to check whether the correct
+	/* It may be sufficient for your application to check whether the correct
 	 * certificate is provisioned with a given tag directly using modem_key_mgmt_cmp().
 	 * Here, for the sake of the completeness, we check that a certificate exists
 	 * before comparing it with what we expect it to be.
