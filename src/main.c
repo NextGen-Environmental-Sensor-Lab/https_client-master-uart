@@ -34,7 +34,7 @@ int main(void) {
 	// 	return -1;
 	// }
 
-	/* Initialize the RG-15 UART */
+	/* Initialize the Sensor's UART */
 	ret = uart_init(my_uart1);
 	if (ret != 0) {
 		printk("FATAL ERROR!\n");

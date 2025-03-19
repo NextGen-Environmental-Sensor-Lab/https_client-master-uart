@@ -1,14 +1,10 @@
 #include "uart_handler.h"
-#include "https_handler.h"
+// #include "https_handler.h"
 #include "data_acq.h"
 
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/uart.h>
-
-// #include <math.h>
-// #include <string.h>
-// #include <stdio.h>
 
 #define DEV_CONSOLE DT_NODELABEL(uart0)
 #define DEV_OTHER DT_NODELABEL(uart1)
@@ -120,7 +116,7 @@ int uart_init(const struct device *dev) {
 void uart_thread_entry(void *a, void *b, void *c) {
 	// print_uart(my_uart0, "Uart thread started\r\nEvery line received on uart device initialized using the function \"uart_init\" is sent to google sheets!\r\n");
 
-	printk("Force rebooting RG-15...\r\n");
+	printk("Force rebooting sensor...\r\n");
 	print_uart(my_uart1, "K\n");
 
 	k_sem_give(&sensor_ready_sem);

@@ -2,6 +2,7 @@
 #include "https_handler.h"
 #include "uart_handler.h"
 #include <zephyr/kernel.h>
+#include <ctype.h>
 
 #define MSG_SIZE 512
 
@@ -32,6 +33,7 @@ void data_acq_entry(void *a, void *b, void *c) {
     }
 }
 static char buff[1024];
+ 
 
 void parse_sensor_and_queue_https_message() {
 	/* Acc 0.001 in, EventAcc 0.019 in, TotalAcc 0.019 in, RInt 0.082 iph */
