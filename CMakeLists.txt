@@ -26,6 +26,6 @@ target_sources(app PRIVATE
                 src/https_handler.c
                 src/uart_handler.h
                 src/uart_handler.c
-                src/data_acq.h
-                src/data_acq.c)
+                src/sensor_data_acq.h
+                src/sensor_data_acq.c)
 # NORDIC SDK APP END
