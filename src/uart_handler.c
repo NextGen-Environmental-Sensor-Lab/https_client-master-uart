@@ -194,49 +194,6 @@ void parse_rg15_and_queue_https_message() {
 	if (ret > 0 && k_msgq_put(&https_send_queue, uart_send, K_NO_WAIT) == 0) {
 			printk("successfully queued a messaged from uart thread to https thread: \n%s", uart_send);
 	};
-	// /* This is a reading from RG-15 */
-	// if (strstr(clean_buff, "Acc") != NULL) {
-	// 	/* To DEBUG 			Acc6.72mm,EventAcc6.72mm,TotalAcc36.48mm,RInt1.42mmph */				
-	// 	char *token = strtok(clean_buff, ",");
-
-	// 	// Parse each token
-	// 	if (token != NULL) {
-	// 		// Extract value before "mm" and convert it to double
-	// 		sscanf(token, "Acc%fmm", &acc);
-	// 		token = strtok(NULL, ",");  // Move to next token
-	// 	}
-
-	// 	if (token != NULL) {
-	// 		sscanf(token, "EventAcc%fmm", &event_acc);
-	// 		token = strtok(NULL, ",");
-	// 	}
-
-	// 	if (token != NULL) {
-	// 		sscanf(token, "TotalAcc%fmm", &total_acc);
-	// 		token = strtok(NULL, ",");
-	// 	}
-
-	// 	if (token != NULL) {
-	// 		sscanf(token, "RInt%fmmph", &r_int);
-	// 	}
-
-	// 	// Output the parsed values
-	// 	printf("Acc: %.2f\n", acc);
-	// 	printf("EventAcc: %.2f\n", event_acc);
-	// 	printf("TotalAcc: %.2f\n", total_acc);
-	// 	printf("RInt: %.2f\n", r_int);
-		// int ret = sscanf(clean_buff, "%*sAcc%lfmm,EventAcc%lfmm,TotalAcc%lfmm,RInt%lfmmph%*s", &acc, &event_acc, &total_acc, &r_int);
-		// printk("ret is :%d\r\n", ret);
-		// if (ret == 4) {
-		// 	snprintf(clean_buff, sizeof(clean_buff), "%lf,%lf,%lf,%lf", acc, event_acc, total_acc, r_int);
-		// 	printk("data is: %s\r\n", clean_buff);
-
-		// }
-	// } 
-	// else if (!rg_15_setup_done && (strstr(clean_buff, "Ready") != NULL)) {
-	// 		rg_15_setup_done = true;
-	// 		k_sem_give(&rg15_ready_sem);
-	// }
 
 }
 
@@ -251,9 +208,6 @@ void uart_thread_entry(void *a, void *b, void *c) {
 		/* Check if there is a message in the uart0_msgq */
 		if (k_msgq_get(&uart0_msgq, &tx_buf, K_NO_WAIT) == 0) {
 			printk("mssg from uart0: %s\r\n", tx_buf);
-			// parse_and_queue_https_message();
-			// print_uart(my_uart1, tx_buf);
-			// print_uart(my_uart1, "\n");
 		}
 		/* Check if there is a message in the uart1_msgq
 		 * RG-15 messages are received via UART1 

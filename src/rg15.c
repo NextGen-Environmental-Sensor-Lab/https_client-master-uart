@@ -37,12 +37,6 @@ static rg15_command_t const rg15_command_table[RG15_COMMAND_TABLE_LEN] = {
     {"A",       "Acc%lf%s",                                         rg15_acc_data_cb},
     {"R",       "Acc%lf%s,EventAcc%lf%s,TotalAcc%lf%s,RInt%lf%s",   rg15_meas_data_cb},
     {"K",       "Reset%c",                                          rg15_reset_device_cb},
-    // {"B %lu",   "Baud%lu",                                          rg15_baud_cb},
-    // {"%c",      "%c",                                               rg15_op_mode_cb},
-    // {"%c",      "%c",                                               rg15_resolution_cb},
-    // {"%c",      "%c",                                               rg15_units_cb},
-    // {NULL,      "LensBad",                                          rg15_lens_bad_cb},
-    // {NULL,      "EmSat",                                            rg15_emitter_sat_cb},
     {NULL,      NULL,                                               NULL}
 };
 

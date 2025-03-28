@@ -5,3 +5,8 @@
 &uart1 {
 	current-speed = < 9600 >;
 };
+
+&gpio0 {
+	status = "ok";
+};
+
