@@ -5,3 +5,11 @@
 &uart1 {
 	current-speed = < 9600 >;
 };
+
+&gpio0 {
+	status = "enabled";
+};
+
+&led0 {
+	gpios = <&egpio 9 GPIO_ACTIVE_HIGH>;
+};

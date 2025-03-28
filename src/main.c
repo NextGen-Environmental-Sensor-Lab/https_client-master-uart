@@ -1,6 +1,8 @@
 #include <string.h>
 #include <zephyr/kernel.h>
 #include <stdlib.h>
+// #include <zephyr/device.h>
+// #include <zephyr/drivers/gpio.h>
 
 #include "uart_handler.h"
 #include "https_handler.h"
@@ -17,6 +19,9 @@ static struct k_thread uart_thread;
 static struct k_thread https_thread;
 static struct k_thread sensor_data_acq_thread;
 
+// static const struct device *gpio_port = DEVICE_DT_GET(DT_NODELABEL(gpio0));
+
+
 extern void uart_thread_entry(void *, void *, void *);
 extern void https_thread_entry(void *, void *, void *);
 extern void sensor_data_acq_entry(void *, void *, void *);
@@ -26,13 +31,6 @@ extern const struct device *const my_uart1;
 
 int main(void) {
 	int ret;
-
-	// /* Initialize the UART console */
-	// ret = uart_init(my_uart0);
-	// if (ret != 0) {
-	// 	printk("FATAL ERROR!\n");
-	// 	return -1;
-	// }
 
 	/* Initialize the Sensor's UART */
 	ret = uart_init(my_uart1);
@@ -47,6 +45,19 @@ int main(void) {
 		printk("FATAL ERROR\n");
 		return -1;
 	}
+
+	/*Initialize Pin2*/
+	// printf(" initializing gpio\n");
+	// ret = gpio_pin_configure(gpio_port, 2, GPIO_OUTPUT_ACTIVE);
+	// if (ret < 0) {
+	// 	printf("ret=%d",ret);
+	// 	return -1;
+	// }
+	// // while (1) {
+	// gpio_pin_set(gpio_port,2,1);
+	// //k_msleep(SLEEP_TIME_MS);
+	// printk("pin 2 on\n");	
+	// // }
 
 	/* Start UART thread */
 	k_thread_create(&uart_thread, uart_thread_stack,

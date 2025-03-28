@@ -5,6 +5,10 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/uart.h>
 
+#include <math.h>
+#include <string.h>
+#include <stdio.h>
+
 #define DEV_CONSOLE DT_NODELABEL(uart0)
 #define DEV_OTHER DT_NODELABEL(uart1)
 

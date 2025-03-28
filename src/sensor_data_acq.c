@@ -4,6 +4,9 @@
 
 #include <zephyr/kernel.h>
 #include <ctype.h>
+#include <math.h>
+#include <string.h>
+#include <stdio.h>
 
 #define MSG_SIZE 512
 
