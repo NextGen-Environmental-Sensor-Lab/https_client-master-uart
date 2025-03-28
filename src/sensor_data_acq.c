@@ -45,16 +45,11 @@ static char buff[1024];
  
 
 void parse_sensor_and_queue_https_message() {
-	
 	/* Acc 0.001 in, EventAcc 0.019 in, TotalAcc 0.019 in, RInt 0.082 iph */
-	
 	int idx = 0;
 	char *data_ptr;
 	int ret;
 
-	/*"Acc" would change based on first word of sensor response, 
-	following would change based on format of data response*/
-	
 	if (strstr(tx_buf, "Acc") == NULL) {
 		return;
 	}
