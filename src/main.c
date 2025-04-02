@@ -1,11 +1,14 @@
 #include <string.h>
 #include <zephyr/kernel.h>
 #include <stdlib.h>
+#include <math.h>
+#include <stdio.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 
 #include "uart_handler.h"
 #include "https_handler.h"
+#include "battery.h"
 
 #define UART_THREAD_STACK_SIZE 	2 * 1024
 #define HTTPS_THREAD_STACK_SIZE 2 * 1024
@@ -27,6 +30,9 @@ extern void data_acq_entry(void *, void *, void *);
 
 extern const struct device *const my_uart1;
 
+extern int battery_measure_enable(bool enable);
+extern int battery_sample(void);
+
 int main(void) {
 	int ret;
 
@@ -43,6 +49,27 @@ int main(void) {
 		printk("FATAL ERROR\n");
 		return -1;
 	}
+
+	int rc = battery_measure_enable(true);
+	if (rc != 0) {
+		printk("Failed initialize battery measurement: %d\n", rc);
+		return 0;
+	}
+
+
+	int batt_mV = battery_sample();
+
+	if (batt_mV < 0) {
+		printk("Failed to read battery voltage: %d\n",
+				batt_mV);
+	
+	}
+
+	printk("%d mV\n", batt_mV);
+
+	k_busy_wait(1 * USEC_PER_SEC);
+
+	printk("Disable: %d\n", battery_measure_enable(false));
 	
 	/*Initialize Pin2*/
 	/* printf(" initializing gpio\n");
