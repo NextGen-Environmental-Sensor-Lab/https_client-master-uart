@@ -20,7 +20,6 @@ static char uart_send[SEND_BUF_SIZE];
 // static bool rg_15_setup_done = false;
 
 extern struct k_msgq https_send_queue;
-
 extern struct k_sem rg15_ready_sem;
 
 /* queue to store up to 10 messages (aligned to 4-byte boundary) */
@@ -75,7 +74,6 @@ void uart_cb(const struct device *dev, void *user_data) {
 /*
  * Print a null-terminated string character by character to the UART interface
  */
-
 void print_uart(const struct device *dev, char *buf) {
 	int msg_len = strlen(buf);
 	for (int i = 0; i < msg_len; i++) {

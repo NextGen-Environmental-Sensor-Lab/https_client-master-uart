@@ -64,6 +64,7 @@ struct divider_data {
 	struct adc_sequence adc_seq;
 	int16_t raw;
 };
+
 static struct divider_data divider_data = {
 #if DT_NODE_HAS_STATUS_OKAY(VBATT)
 	.adc = DEVICE_DT_GET(DT_IO_CHANNELS_CTLR(VBATT)),
@@ -181,44 +182,13 @@ int battery_sample(void)
 					      &val);
 
 			if (dcp->output_ohm != 0) {
-				rc = val * (uint64_t)dcp->full_ohm
-					/ dcp->output_ohm;
-				LOG_INF("raw %u ~ %u mV => %d mV\n",
-					ddp->raw, val, rc);
+				rc = val * (uint64_t)dcp->full_ohm / dcp->output_ohm;
+				LOG_INF("raw %u ~ %u mV => %d mV\n", ddp->raw, val, rc);
 			} else {
 				rc = val;
 				LOG_INF("raw %u ~ %u mV\n", ddp->raw, val);
 			}
 		}
 	}
-
 	return rc;
 }
-
-// unsigned int battery_level_pptt(unsigned int batt_mV,
-// 				const struct battery_level_point *curve)
-// {
-// 	const struct battery_level_point *pb = curve;
-
-// 	if (batt_mV >= pb->lvl_mV) {
-// 		/* Measured voltage above highest point, cap at maximum. */
-// 		return pb->lvl_pptt;
-// 	}
-// 	/* Go down to the last point at or below the measured voltage. */
-// 	while ((pb->lvl_pptt > 0)
-// 	       && (batt_mV < pb->lvl_mV)) {
-// 		++pb;
-// 	}
-// 	if (batt_mV < pb->lvl_mV) {
-// 		/* Below lowest point, cap at minimum */
-// 		return pb->lvl_pptt;
-// 	}
-
-// 	/* Linear interpolation between below and above points. */
-// 	const struct battery_level_point *pa = pb - 1;
-
-// 	return pb->lvl_pptt
-// 	       + ((pa->lvl_pptt - pb->lvl_pptt)
-// 		  * (batt_mV - pb->lvl_mV)
-// 		  / (pa->lvl_mV - pb->lvl_mV));
-// }

@@ -56,9 +56,7 @@ int main(void) {
 		return 0;
 	}
 
-
 	int batt_mV = battery_sample();
-
 	if (batt_mV < 0) {
 		printk("Failed to read battery voltage: %d\n",
 				batt_mV);
@@ -70,17 +68,6 @@ int main(void) {
 	k_busy_wait(1 * USEC_PER_SEC);
 
 	printk("Disable: %d\n", battery_measure_enable(false));
-	
-	/*Initialize Pin2*/
-	/* printf(" initializing gpio\n");
-	ret = gpio_pin_configure(gpio_port, 2, GPIO_OUTPUT_ACTIVE);
-	if (ret < 0) {
-		printf("ret=%d",ret);
-		return -1;
-	}
-	// turn gpio pin 2 on
-	gpio_pin_set(gpio_port,2,1);
-	printk("pin 2 on\n");	*/
 
 	/* Start UART thread */
 	k_thread_create(&uart_thread, uart_thread_stack,

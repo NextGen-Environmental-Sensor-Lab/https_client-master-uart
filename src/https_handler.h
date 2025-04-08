@@ -9,8 +9,7 @@
         "{"                                         \
             "\"command\":\"appendRow\","            \
             "\"sheet_name\":\"Sheet1\","            \
-            "\"values\":\"%s\","                    \
-            "\"batt_v\":\"%d\""                     \
+            "\"values\":\"%s,%d\""                  \
         "}"
 
 #define HTTPS_POST_REGULAR_UPLOAD                                              	     \
