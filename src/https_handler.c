@@ -305,7 +305,7 @@ int https_init(void)
 {
 	int err;
 
-	printk("HTTPS thread started....\r\n");
+	printk("HTTPS init started....\r\n");
 
 	err = nrf_modem_lib_init();
 	if (err < 0)
@@ -336,6 +336,8 @@ int https_init(void)
 
 void https_thread_entry(void *a, void *b, void *c)
 {
+	printk("HTTPS thread starting...\n");
+	
 	while (1)
 	{
 		/* Wait forever until there is a message in the https_send_queue */
