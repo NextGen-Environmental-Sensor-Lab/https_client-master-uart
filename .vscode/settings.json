@@ -27,7 +27,9 @@
         "tls_credentials.h": "c",
         "uart_handler.h": "c",
         "netdb.h": "c",
-        "device.h": "c"
+        "device.h": "c",
+        "cctype": "c",
+        "reboot.h": "c"
     },
     "nrf-connect.debugging.bindings": {
         "${workspaceFolder}/build": "Launch build"

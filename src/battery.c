@@ -147,6 +147,8 @@ static int battery_setup(void)
 
 SYS_INIT(battery_setup, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 
+
+
 int battery_measure_enable(bool enable)
 {
 	int rc = -ENOENT;

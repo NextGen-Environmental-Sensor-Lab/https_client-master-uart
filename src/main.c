@@ -33,6 +33,7 @@ extern const struct device *const my_uart1;
 extern int battery_measure_enable(bool enable);
 extern int battery_sample(void);
 
+
 int main(void) {
 	int ret;
 
@@ -68,6 +69,7 @@ int main(void) {
 	k_busy_wait(1 * USEC_PER_SEC);
 
 	printk("Disable: %d\n", battery_measure_enable(false));
+
 
 	/* Start UART thread */
 	k_thread_create(&uart_thread, uart_thread_stack,

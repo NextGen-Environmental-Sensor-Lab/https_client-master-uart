@@ -1,5 +1,7 @@
 #include "uart_handler.h"
 #include "https_handler.h"
+#include "data_acq.h"
+#include "battery.h"
 
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
@@ -11,11 +13,10 @@
 
 #define DEV_OTHER DT_NODELABEL(uart1)
 
-#define MSG_SIZE 512
 
 extern struct k_sem get_reading_sem;
 
-static char uart_send[SEND_BUF_SIZE];
+// char uart_send[SEND_BUF_SIZE];
 
 // static bool rg_15_setup_done = false;
 
@@ -28,8 +29,8 @@ K_MSGQ_DEFINE(uart1_msgq, MSG_SIZE, 10, 4);
 const struct device *const my_uart1 = DEVICE_DT_GET(DEV_OTHER);
 
 /* receive buffer used in UART ISR callback */
-static char tx_buf[MSG_SIZE];
-static char clean_buff[MSG_SIZE];
+char tx_buf[MSG_SIZE];
+char clean_buff[MSG_SIZE];
 static char rx_buf1[MSG_SIZE];
 static int rx_buf_pos1;
 
@@ -113,46 +114,9 @@ int uart_init(const struct device *dev) {
     return 0;
 }
 
-static char buff[1024];
+char buff[1024];
 
-void parse_rg15_and_queue_https_message() {
-	/* Acc 0.001 in, EventAcc 0.019 in, TotalAcc 0.019 in, RInt 0.082 iph */
-	int idx = 0;
-	char *data_ptr;
-	int ret;
-
-	if (strstr(tx_buf, "Acc") == NULL) {
-		return;
-	}
-	
-	data_ptr = &tx_buf[0];
-	memset(clean_buff, '\0', sizeof(clean_buff));
-	while(*data_ptr != '\0' && idx < (sizeof(tx_buf) - 1)) {
-		if ((*data_ptr != '\r') && (*data_ptr != '\n') && (*data_ptr != ' ')) {
-			if (isdigit(*data_ptr) || (*data_ptr == '.') || (*data_ptr == ',')) {
-				clean_buff[idx] = *data_ptr;
-				idx++;
-			}
-		}
-		data_ptr++;
-	}
-	clean_buff[idx] = '\0';
-
-	printk("cleaned buffer is: %s\r\n", clean_buff);
-	int batt_reading = battery_sample();
-	ret = snprintf(buff, sizeof(buff), HTTP_POST_MESSAGE, clean_buff, batt_reading);
-	ret = snprintf(uart_send, sizeof(uart_send), HTTPS_POST_REGULAR_UPLOAD, 
-													HTTPS_TARGET,
-													HTTPS_HOSTNAME,
-													HTTPS_PORT,
-													ret,
-													buff);
-
-	if (ret > 0 && k_msgq_put(&https_send_queue, uart_send, K_NO_WAIT) == 0) {
-			printk("successfully queued a messaged from uart thread to https thread: \n%s", uart_send);
-	};
-
-}
+// 
 
 void uart_thread_entry(void *a, void *b, void *c) {
 

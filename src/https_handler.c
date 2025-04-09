@@ -8,6 +8,7 @@
 #include <zephyr/net/conn_mgr_monitor.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
 #include <zephyr/net/tls_credentials.h>
+#include <zephyr/sys/reboot.h>
 
 #if defined(CONFIG_POSIX_API)
 #include <zephyr/posix/arpa/inet.h>
@@ -20,7 +21,15 @@
 #include <modem/modem_key_mgmt.h>
 #endif
 
+void my_timer_handler(struct k_timer *dummy)
+{
+	printk("Not Connected\n");
+	printk("Rebooting...\n");
+	sys_reboot(SYS_REBOOT_COLD);
+}
+
 K_MSGQ_DEFINE(https_send_queue, SEND_BUF_SIZE, 10, 16);
+K_TIMER_DEFINE(my_timer, my_timer_handler, NULL);
 
 static char send_buf[SEND_BUF_SIZE];
 static char recv_buf[RECV_BUF_SIZE];
@@ -168,14 +177,23 @@ static void lte_lc_handler(const struct lte_lc_evt *const evt)
 		{
 			if (!connected)
 			{
-				break;
+				break; // avoids multiple timer starts
 			}
 
 			printk("LTE network is disconnected.\n");
 			connected = false;
-			break;
+
+			/* Start a timer for X minutes and if we are not connected, reboot w/ my_timer_handler callback */
+			k_timer_start(&my_timer, K_MINUTES(1), K_SECONDS(1));
+
+			break; 
 		}
 		connected = true;
+
+		printk("Stopping timer.\n");
+		k_timer_stop(&my_timer);
+		
+		/* We are connected, stop timer if started  */
 		k_sem_give(&network_connected_sem);
 		break;
 	default:
@@ -305,7 +323,7 @@ int https_init(void)
 {
 	int err;
 
-	printk("HTTPS init started....\r\n");
+	printk("HTTPS thread started....\r\n");
 
 	err = nrf_modem_lib_init();
 	if (err < 0)
@@ -336,8 +354,6 @@ int https_init(void)
 
 void https_thread_entry(void *a, void *b, void *c)
 {
-	printk("HTTPS thread starting...\n");
-	
 	while (1)
 	{
 		/* Wait forever until there is a message in the https_send_queue */
