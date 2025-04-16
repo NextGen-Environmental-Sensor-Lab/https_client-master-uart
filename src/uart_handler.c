@@ -11,6 +11,7 @@
 
 #define DEV_OTHER DT_NODELABEL(uart1)
 
+<<<<<<< Updated upstream
 #define MSG_SIZE 512
 
 extern struct k_sem get_reading_sem;
@@ -19,8 +20,11 @@ static char uart_send[SEND_BUF_SIZE];
 
 // static bool rg_15_setup_done = false;
 
+=======
+extern struct k_sem get_reading_sem;
+>>>>>>> Stashed changes
 extern struct k_msgq https_send_queue;
-extern struct k_sem rg15_ready_sem;
+extern struct k_sem data_ready_sem;
 
 /* queue to store up to 10 messages (aligned to 4-byte boundary) */
 K_MSGQ_DEFINE(uart1_msgq, MSG_SIZE, 10, 4);
@@ -28,13 +32,18 @@ K_MSGQ_DEFINE(uart1_msgq, MSG_SIZE, 10, 4);
 const struct device *const my_uart1 = DEVICE_DT_GET(DEV_OTHER);
 
 /* receive buffer used in UART ISR callback */
+<<<<<<< Updated upstream
 static char tx_buf[MSG_SIZE];
 static char clean_buff[MSG_SIZE];
+=======
+char rx_buf[MSG_SIZE];
+char clean_buff[MSG_SIZE];
+>>>>>>> Stashed changes
 static char rx_buf1[MSG_SIZE];
 static int rx_buf_pos1;
 
 /*
- * Read characters from UART until line end is detected. Afterwards push the
+ * Read characters from UART until line end is detected. Afterwards push the 
  * data to the message queue.
  */
 void uart_cb(const struct device *dev, void *user_data) {
@@ -115,6 +124,7 @@ int uart_init(const struct device *dev) {
 
 static char buff[1024];
 
+<<<<<<< Updated upstream
 void parse_rg15_and_queue_https_message() {
 	/* Acc 0.001 in, EventAcc 0.019 in, TotalAcc 0.019 in, RInt 0.082 iph */
 	int idx = 0;
@@ -154,17 +164,19 @@ void parse_rg15_and_queue_https_message() {
 
 }
 
+=======
+>>>>>>> Stashed changes
 void uart_thread_entry(void *a, void *b, void *c) {
 
 	printk("UART thread starting...\n");
-	k_sem_give(&rg15_ready_sem);
+
 	while (1) {
 		/* Check if there is a message in the uart1_msgq
 		 * RG-15 messages are received via UART1 
 		 */
-		if (k_msgq_get(&uart1_msgq, &tx_buf, K_NO_WAIT) == 0) {
-			printk("mssg from uart1: %s\r\n", tx_buf);	
-			parse_rg15_and_queue_https_message();
+		if (k_msgq_get(&uart1_msgq, &rx_buf, K_FOREVER) == 0) {
+			printk("mssg from uart1: %s\r\n", rx_buf);	
+			parse_data_and_queue_https_message();
 		}
         /* Give control to other threads to do their thing */
         k_sleep(K_MSEC(100));

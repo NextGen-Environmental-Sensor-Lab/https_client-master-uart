@@ -1,4 +1,5 @@
 #include "https_handler.h"
+#include "data_acq.h"
 
 #include <modem/nrf_modem_lib.h>
 #include <modem/lte_lc.h>
@@ -20,6 +21,18 @@
 #include <modem/modem_key_mgmt.h>
 #endif
 
+<<<<<<< Updated upstream
+=======
+#define LTE_NETWORK_CONN_TIMEOUT_MINUTES 5 /* change to 30 minutes in the field */
+
+void my_timer_handler(struct k_timer *dummy)
+{
+	printk("Sensor LTE has been offline for atleast %d minutes. Rebooting...\n", LTE_NETWORK_CONN_TIMEOUT_MINUTES);
+	lte_lc_power_off();
+	sys_reboot(SYS_REBOOT_COLD);
+}
+
+>>>>>>> Stashed changes
 K_MSGQ_DEFINE(https_send_queue, SEND_BUF_SIZE, 10, 16);
 
 static char send_buf[SEND_BUF_SIZE];
@@ -27,6 +40,8 @@ static char recv_buf[RECV_BUF_SIZE];
 static int httpPostLen;
 
 static K_SEM_DEFINE(network_connected_sem, 0, 1);
+
+extern struct k_sem data_acq_start_sem;
 /* Certificate for `example.com` */
 static const char cert[] = {
 #include "DigiCertGlobalG2.pem.inc"
@@ -146,8 +161,8 @@ int tls_setup(int fd)
 	}
 
 	err = setsockopt(fd, SOL_TLS, TLS_HOSTNAME,
-					 HTTPS_HOSTNAME,
-					 sizeof(HTTPS_HOSTNAME) - 1);
+					 DATA_ACQ_HTTPS_HOSTNAME,
+					 sizeof(DATA_ACQ_HTTPS_HOSTNAME) - 1);
 	if (err)
 	{
 		printk("Failed to setup TLS hostname, err %d\n", errno);
@@ -156,10 +171,13 @@ int tls_setup(int fd)
 	return 0;
 }
 
-static void lte_lc_handler(const struct lte_lc_evt *const evt)
-{
+static void lte_lc_handler(const struct lte_lc_evt *const evt) {
+	/* CAUTION: Modem shall be gracefully deinitialized to prevent entering into Modem Reset Loop Restriction 
+	 * 	for more detials see: https://docs.nordicsemi.com/bundle/nwp_042/page/WP/nwp_042/intro.html
+	 */
 	static bool connected;
 
+<<<<<<< Updated upstream
 	switch (evt->type)
 	{
 	case LTE_LC_EVT_NW_REG_STATUS:
@@ -176,10 +194,68 @@ static void lte_lc_handler(const struct lte_lc_evt *const evt)
 			break;
 		}
 		connected = true;
+=======
+	if (evt->type == LTE_LC_EVT_NW_REG_STATUS) {
+		switch (evt->nw_reg_status) {
+			case LTE_LC_NW_REG_NOT_REGISTERED:	
+			/* This is the default case, no need to worry about it */
+			printk("LTE network not registered, not searching\n");
+			connected = false;
+			break;			
+		case LTE_LC_NW_REG_REGISTERED_HOME:
+			printk("LTE network registered home\n");
+			connected = true;
+			break;
+		case LTE_LC_NW_REG_REGISTERED_ROAMING:
+			printk("LTE network registered roaming\n");
+			connected = true;
+			break;
+		case LTE_LC_NW_REG_SEARCHING:
+			printk("LTE network searching.....\n");
+			connected = false;
+			break;
+		case LTE_LC_NW_REG_REGISTRATION_DENIED:
+			/* we need to reboot */
+			printk("LTE network registration denied\n");
+			connected = false;
+			lte_lc_power_off();
+			sys_reboot(SYS_REBOOT_COLD);
+			break;
+		case LTE_LC_NW_REG_UNKNOWN:
+			/* Disconnects and no-coverage scenarios fall under this case 
+			 * Network connection is lost, e.g. in elevator 
+			 */
+			printk("LTE network registration unknown\n");
+			connected = false;
+			break;
+		case LTE_LC_NW_REG_UICC_FAIL:
+			/* Problem with SIM or eSIM - Hardware problem */
+			printk("LTE network UICC failure\n");
+			connected = false;
+			lte_lc_power_off();
+			sys_reboot(SYS_REBOOT_COLD);
+			break;
+		default:
+			break;
+		}
+	} else {
+		/* Don't care */
+	}
+	if (!connected)
+	{
+		/* Starting a timer that has already been started resets the timer
+		 * We enter lte_lc_handler callback when there are network events. 
+		 * If there are no network events for 5 minutes, and had been 
+		 * unconnected -- we need to perform a hard reboot. Else, modem is 
+		 * doing what it is supposed to be doing.
+		 */
+		k_timer_start(&my_timer, K_MINUTES(LTE_NETWORK_CONN_TIMEOUT_MINUTES), K_NO_WAIT);
+	}
+	else
+	{
+		k_timer_stop(&my_timer);
+>>>>>>> Stashed changes
 		k_sem_give(&network_connected_sem);
-		break;
-	default:
-		break;
 	}
 }
 
@@ -196,9 +272,9 @@ static void send_http_request(void)
 	};
 	char peer_addr[INET6_ADDRSTRLEN];
 
-	printk("Looking up %s\n", HTTPS_HOSTNAME);
+	printk("Looking up %s\n", DATA_ACQ_HTTPS_HOSTNAME);
 
-	err = getaddrinfo(HTTPS_HOSTNAME, HTTPS_PORT, &hints, &res);
+	err = getaddrinfo(DATA_ACQ_HTTPS_HOSTNAME, DATA_ACQ_HTTPS_PORT, &hints, &res);
 	if (err)
 	{
 		printk("getaddrinfo() failed, err %d\n", errno);
@@ -229,7 +305,7 @@ static void send_http_request(void)
 		goto clean_up;
 	}
 
-	printk("Connecting to %s:%d\n", HTTPS_HOSTNAME,
+	printk("Connecting to %s:%d\n", DATA_ACQ_HTTPS_HOSTNAME,
 		   ntohs(((struct sockaddr_in *)(res->ai_addr))->sin_port));
 	err = connect(fd, res->ai_addr, res->ai_addrlen);
 	if (err)
@@ -330,6 +406,7 @@ int https_init(void)
 	}
 
 	k_sem_take(&network_connected_sem, K_FOREVER);
+	k_sem_give(&data_acq_start_sem);
 
 	return 0;
 }
