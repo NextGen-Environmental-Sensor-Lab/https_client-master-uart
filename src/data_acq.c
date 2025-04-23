@@ -1,13 +1,11 @@
 #include "data_acq.h"
 #include "uart_handler.h"
-<<<<<<< Updated upstream
-=======
 #include "https_handler.h"
 #include "battery.h"
 
 #include <modem/modem_info.h>
+#include <zephyr/logging/log.h>
 
->>>>>>> Stashed changes
 #include <zephyr/kernel.h>
 #include <ctype.h>
 
@@ -19,30 +17,18 @@
 
 #define NETWORK_PARAMS_DATA "%s,%s,%s,%s"
 
+static char buff[1024];
+
 /* Semaphore to get a reading. Initial value is 0 and max is 1 */
 K_SEM_DEFINE(data_ready_sem, 0, 1);
 
+#define MSG_SIZE 512
+
+LOG_MODULE_REGISTER(data_acq, 3);
+
 extern const struct device *const my_uart1;
-<<<<<<< Updated upstream
-
-void data_acq_entry(void *a, void *b, void *c) {
-    printk("Data thread starting...\n");
-    
-    k_sem_take(&rg15_ready_sem, K_FOREVER);
-
-    printk("Force rebooting RG-15...\r\n");
-	print_uart(my_uart1, "K\n");
-
-    /* Give it a couple of seconds after reboot */
-    k_busy_wait(3 * 1000 * 1000);
-    print_uart(my_uart1, "P\r\n");
-    k_busy_wait(1 * 1000 * 1000);
-    
-    while(1) {
-=======
 extern char rx_buf[MSG_SIZE]; // receive buffer used in UART ISR callback
 extern char clean_buff[MSG_SIZE];
-extern char buff[1024];
 static char uart_send[SEND_BUF_SIZE];
 static char network_info[512];
 
@@ -61,13 +47,10 @@ void data_acq_entry(void *a, void *b, void *c)
     k_sem_take(&data_acq_start_sem, K_FOREVER);
     while (1)
     {
->>>>>>> Stashed changes
         printk("Polling measurement from RG-15...\r\n");
         print_uart(my_uart1, "R\r\n");
         k_sleep(K_SECONDS(DEFAULT_DATA_ACQ_PERIODICITY));
     }
-<<<<<<< Updated upstream
-=======
 }
 
 static int prepare_network_info(char *buf, uint32_t max_buf_len) {
@@ -164,5 +147,4 @@ int data_acq_init(void)
     k_busy_wait(1 * 1000 * 1000);
 
     return 0;
->>>>>>> Stashed changes
 }

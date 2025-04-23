@@ -31,12 +31,6 @@ extern void data_acq_entry(void *, void *, void *);
 
 extern const struct device *const my_uart1;
 
-<<<<<<< Updated upstream
-extern int battery_measure_enable(bool enable);
-extern int battery_sample(void);
-
-=======
->>>>>>> Stashed changes
 int main(void) {
 	int ret;
 	/* Initialize the RG-15 UART */
@@ -65,15 +59,6 @@ int main(void) {
 		return -1;
 	}
 
-<<<<<<< Updated upstream
-	printk("%d mV\n", batt_mV);
-
-	k_busy_wait(1 * USEC_PER_SEC);
-
-	printk("Disable: %d\n", battery_measure_enable(false));
-
-=======
->>>>>>> Stashed changes
 	/* Start UART thread */
 	k_thread_create(&uart_thread, uart_thread_stack,
 		K_THREAD_STACK_SIZEOF(uart_thread_stack), uart_thread_entry,

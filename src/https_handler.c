@@ -9,6 +9,8 @@
 #include <zephyr/net/conn_mgr_monitor.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
 #include <zephyr/net/tls_credentials.h>
+#include <zephyr/sys/reboot.h>
+#include <zephyr/logging/log.h>
 
 #if defined(CONFIG_POSIX_API)
 #include <zephyr/posix/arpa/inet.h>
@@ -21,9 +23,13 @@
 #include <modem/modem_key_mgmt.h>
 #endif
 
-<<<<<<< Updated upstream
-=======
 #define LTE_NETWORK_CONN_TIMEOUT_MINUTES 5 /* change to 30 minutes in the field */
+
+LOG_MODULE_REGISTER(https_handler, 3);
+
+void my_timer_handler(struct k_timer *dummy);
+
+K_TIMER_DEFINE(my_timer, my_timer_handler, NULL);
 
 void my_timer_handler(struct k_timer *dummy)
 {
@@ -32,7 +38,6 @@ void my_timer_handler(struct k_timer *dummy)
 	sys_reboot(SYS_REBOOT_COLD);
 }
 
->>>>>>> Stashed changes
 K_MSGQ_DEFINE(https_send_queue, SEND_BUF_SIZE, 10, 16);
 
 static char send_buf[SEND_BUF_SIZE];
@@ -44,7 +49,7 @@ static K_SEM_DEFINE(network_connected_sem, 0, 1);
 extern struct k_sem data_acq_start_sem;
 /* Certificate for `example.com` */
 static const char cert[] = {
-#include "DigiCertGlobalG2.pem.inc"
+#include "ngens.pem.inc"
 
 	/* Null terminate certificate if running Mbed TLS on the application core.
 	 * Required by TLS credentials API.
@@ -177,24 +182,6 @@ static void lte_lc_handler(const struct lte_lc_evt *const evt) {
 	 */
 	static bool connected;
 
-<<<<<<< Updated upstream
-	switch (evt->type)
-	{
-	case LTE_LC_EVT_NW_REG_STATUS:
-		if ((evt->nw_reg_status != LTE_LC_NW_REG_REGISTERED_HOME) &&
-			(evt->nw_reg_status != LTE_LC_NW_REG_REGISTERED_ROAMING))
-		{
-			if (!connected)
-			{
-				break;
-			}
-
-			printk("LTE network is disconnected.\n");
-			connected = false;
-			break;
-		}
-		connected = true;
-=======
 	if (evt->type == LTE_LC_EVT_NW_REG_STATUS) {
 		switch (evt->nw_reg_status) {
 			case LTE_LC_NW_REG_NOT_REGISTERED:	
@@ -254,7 +241,6 @@ static void lte_lc_handler(const struct lte_lc_evt *const evt) {
 	else
 	{
 		k_timer_stop(&my_timer);
->>>>>>> Stashed changes
 		k_sem_give(&network_connected_sem);
 	}
 }

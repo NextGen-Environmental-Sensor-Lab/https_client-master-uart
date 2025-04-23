@@ -14,9 +14,10 @@ set(gen_dir ${CMAKE_CURRENT_BINARY_DIR}/certs)
 zephyr_include_directories(${gen_dir})
 generate_inc_file_for_target(
     app
-    #cert/DigiCertGlobalG2.pem
-    cert/GTS_RootR1.pem                   #this cert is for google
-    ${gen_dir}/DigiCertGlobalG2.pem.inc   #gets named Digi....pem.inc
+    cert/ngens.pem
+    ${gen_dir}/ngens.pem.inc   #loaded with google cert
+    # cert/webhook_RootCA.pem
+    # ${gen_dir}/webhook_RootCA.pem.inc   #loaded with google cert
     )
 
 # NORDIC SDK APP START

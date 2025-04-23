@@ -69,11 +69,6 @@
  }
  
 
-<<<<<<< Updated upstream
-int battery_measure_enable(bool enable)
-{
-	int rc = -ENOENT;
-=======
 
 // #include <math.h>
 // #include <stdio.h>
@@ -85,7 +80,6 @@ int battery_measure_enable(bool enable)
 // #include <zephyr/drivers/adc.h>
 // #include <zephyr/drivers/sensor.h>
 // #include <zephyr/logging/log.h>
->>>>>>> Stashed changes
 
 // #include "battery.h"
 
