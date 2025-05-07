@@ -15,7 +15,7 @@
 //                 "\"tac\": \"%s\"," 		\
 //                 "\"dev_cell_id\": \"%s\""
 
-#define NETWORK_PARAMS_DATA "%s,%s,%s,%s"
+#define NETWORK_PARAMS_DATA "%s,%s,%s,%s,%s,%s,%s"
 
 static char buff[1024];
 
@@ -55,23 +55,33 @@ void data_acq_entry(void *a, void *b, void *c)
 
 static int prepare_network_info(char *buf, uint32_t max_buf_len) {
 	int ret;
-	char signal_strength[16];
-	char current_band[16];
-	char tracking_area_code[32];
-	char device_cell_id[32];
+	char signal_strength[16] = {0};
+    char ip[32] = {0};
+    char iccid[32] = {0};
+	char imei[32] = {0};
+	char current_band[16] = {0};
+	char tracking_area_code[32] = {0};
+	char device_cell_id[32] = {0};
 
 	/* Get modem information */
 	modem_info_string_get(MODEM_INFO_RSRP, signal_strength,
 			sizeof(signal_strength));
+    modem_info_string_get(MODEM_INFO_IP_ADDRESS, ip,
+            sizeof(ip));
+    modem_info_string_get(MODEM_INFO_ICCID, iccid, 
+            sizeof(iccid));
+    modem_info_string_get(MODEM_INFO_IMEI, imei,
+            sizeof(imei));        
 	modem_info_string_get(MODEM_INFO_CUR_BAND, current_band,
 			sizeof(current_band));
 	modem_info_string_get(MODEM_INFO_AREA_CODE, tracking_area_code,
 			sizeof(tracking_area_code));
 	modem_info_string_get(MODEM_INFO_CELLID, device_cell_id,
 			sizeof(device_cell_id));
+    
 
 	/* Format the network parameters string */
-	ret = snprintf(buf, max_buf_len, NETWORK_PARAMS_DATA, signal_strength,
+	ret = snprintf(buf, max_buf_len, NETWORK_PARAMS_DATA, signal_strength, ip, iccid, imei,
 			current_band, tracking_area_code, device_cell_id);
 
 	return ret;

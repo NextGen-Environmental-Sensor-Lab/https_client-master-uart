@@ -1,0 +1,21 @@
+{
+    "version": 2,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 20
+    },
+    "configurePresets": [
+        {
+            "name": "build",
+            "displayName": "Build for Actinius Icarus Non Secure (rev. 2.0.0)",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "NCS_TOOLCHAIN_VERSION": "NONE",
+                "BOARD": "actinius_icarus@2.0.0/nrf9160/ns",
+                "EXTRA_DTC_OVERLAY_FILE": "boards/icarus.overlay",
+                "BOARD_ROOT": "${sourceDir}/"
+            }
+        }
+    ]
+}
