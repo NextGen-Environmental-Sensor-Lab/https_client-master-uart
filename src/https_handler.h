@@ -5,7 +5,7 @@
         "POST %s HTTP/1.1\r\n"                                                       \
         "Host: %s:%s\r\n"                                                            \
         "Connection: close\r\n"                                                      \
-        "Authorization: Basic bmdlbnNhZG1pbjpONjNuNWFkbTFu\r\n"                      \
+        "Authorization: Basic <auth_string>\r\n"                      \
         "Content-Type: application/json\r\n"                                         \
         "Content-Length: %d\r\n"                                                     \
         "\r\n"                                                                       \
