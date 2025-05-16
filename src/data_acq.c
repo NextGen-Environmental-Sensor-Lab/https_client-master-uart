@@ -46,9 +46,10 @@ void data_acq_entry(void *a, void *b, void *c)
      */
     k_sem_take(&data_acq_start_sem, K_FOREVER);
     while (1)
-    {
-        printk("Polling measurement from RG-15...\r\n");
+    {   
+        printk("Request measurement from RG-15...\r\n");
         print_uart(my_uart1, "R\r\n");
+        
         k_sleep(K_SECONDS(DEFAULT_DATA_ACQ_PERIODICITY));
     }
 }
@@ -118,7 +119,7 @@ void parse_data_and_queue_https_message(void)
     clean_buff[idx] = '\0';
 
     printk("Parsed buffer is: %s\r\n", clean_buff);
-    
+    printf("Parsed buffer is: %s\r\n", clean_buff);
     //int batt_reading = battery_sample();
 
     uint16_t batt_reading = 0;
@@ -152,8 +153,11 @@ int data_acq_init(void)
     print_uart(my_uart1, "K\n");
     /* Give it a couple of seconds after reboot */
     k_busy_wait(3 * 1000 * 1000);
-    printk("Putting rg15 into poll mode...\r\n");
-    print_uart(my_uart1, "P\r\n");
+    // printk("Putting rg15 into poll mode...\r\n");
+    // print_uart(my_uart1, "P\r\n");
+    // k_busy_wait(1 * 1000 * 1000);
+    printk("Set rg15 into continuous mode...\r\n");
+    print_uart(my_uart1, "C\r\n");
     k_busy_wait(1 * 1000 * 1000);
 
     return 0;
