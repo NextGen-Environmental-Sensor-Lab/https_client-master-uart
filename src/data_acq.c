@@ -3,18 +3,14 @@
 #include "https_handler.h"
 #include "battery.h"
 
+#include <date_time.h>
 #include <modem/modem_info.h>
 #include <zephyr/logging/log.h>
 
 #include <zephyr/kernel.h>
 #include <ctype.h>
 
-// #define NETWORK_PARAMS_DATA                     \
-//                 "\"rssi\": \"%s\","    		\
-//                 "\"cb\": \"%s\","       	\
-//                 "\"tac\": \"%s\"," 		\
-//                 "\"dev_cell_id\": \"%s\""
-
+/* signal_strength, ip, iccid, imei, current_band, tracking_area_code, device_cell_id */
 #define NETWORK_PARAMS_DATA "%s,%s,%s,%s,%s,%s,%s"
 
 static char buff[1024];
@@ -88,6 +84,37 @@ static int prepare_network_info(char *buf, uint32_t max_buf_len) {
 	return ret;
 }
 
+static void int64_to_str(int64_t num, char *str) {
+	char temp[21];       // Temporary buffer to hold the reversed string
+	int i = 0;           // Index for the temporary buffer
+	int is_negative = 0; // Flag to indicate if the number is negative
+
+	// Check if the number is negative
+	if (num < 0) {
+		is_negative = 1;
+		num = -num; // Make the number positive for processing
+	}
+
+	// Extract each digit and store it in the temporary buffer
+	do {
+		temp[i++] =
+			(num % 10) + '0'; // Convert the digit to its ASCII representation
+		num /= 10;
+	} while (num > 0);
+
+	// Add the negative sign if the number was negative
+	if (is_negative) {
+		temp[i++] = '-';
+	}
+
+	// Reverse the string into the final output buffer
+	int j;
+	for (j = 0; j < i; j++) {
+		str[j] = temp[i - j - 1];
+	}
+	str[j] = '\0'; // Null-terminate the string
+}
+
 void parse_data_and_queue_https_message(void)
 {
     /* Acc 0.001 in, EventAcc 0.019 in, TotalAcc 0.019 in, RInt 0.082 iph */
@@ -133,7 +160,13 @@ void parse_data_and_queue_https_message(void)
 	prepare_network_info(network_info, 512);
 	printk("Network info: %s\n", network_info);
 
-    ret = snprintf(buff, sizeof(buff), DATA_ACQ_POST_PAYLOAD, clean_buff, batt_reading, network_info);
+    int64_t time_now;
+    char time_now_str[21] = {0};
+
+    date_time_now(&time_now); /* P added this */
+	int64_to_str(time_now, time_now_str);
+
+    ret = snprintf(buff, sizeof(buff), DATA_ACQ_POST_PAYLOAD, time_now_str, clean_buff, batt_reading, network_info);
     ret = snprintf(uart_send, sizeof(uart_send), HTTPS_POST_REQUEST,
                    DATA_ACQ_HTTPS_TARGET,
                    DATA_ACQ_HTTPS_HOSTNAME,

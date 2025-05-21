@@ -5,13 +5,13 @@
 #define DATA_ACQ_HTTPS_PORT      "443"
 #define DATA_ACQ_HTTPS_TARGET    "/nodered/globe" // "/macros/s/AKfycbySi8NPaVAqbAu-arNrJHKaa-xWFXxtQ-7oXr7T_Rc-yW2kUoH4YICrbvguGLcpjgsP/exec"
 
-#define DATA_ACQ_POST_PAYLOAD                        \
+/* Timestamp, Cleaned RRG-15 data, Battery mVolts, Netowrk info */
+#define DATA_ACQ_POST_PAYLOAD                       \
         "{"                                         \
             "\"command\":\"appendRow\","            \
             "\"sheet_name\":\"Sheet1\","            \
-            "\"values\":\"%s,%d,%s\""                  \
+            "\"values\":\"%s,%s,%d,%s\""            \
         "}"
-
 
 #define DEFAULT_DATA_ACQ_PERIODICITY 60
 

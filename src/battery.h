@@ -4,10 +4,10 @@
 //#include <zephyr/drivers/adc.h>
 //#include <stdbool.h>
 
- #define BATVOLT_R1 4.7f                 // MOhm
- #define BATVOLT_R2 10.0f                // MOhm
- #define INPUT_VOLT_RANGE 3.6f           // Volts
- #define VALUE_RANGE_10_BIT 1.023        // (2^10 - 1) / 1000
+ #define BATVOLT_R1         (float)4.7                 // MOhm
+ #define BATVOLT_R2         (float)10.0                // MOhm
+ #define INPUT_VOLT_RANGE   (float)3.6           // Volts
+ #define VALUE_RANGE_10_BIT (float)1.023        // (2^10 - 1) / 1000
   
  #define ADC_RESOLUTION 10
  #define ADC_GAIN ADC_GAIN_1_6
