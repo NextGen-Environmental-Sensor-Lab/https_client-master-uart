@@ -11,8 +11,6 @@ For OTA to work with `github.com`, modify the file `nrf/subsys/net/lib/download_
 
 Above file `download_client.c` can be found in the `nrf` folder where the NCS toolchain has been installed. 
 
-note:
-
 For mac users, it is typically at `/opt/nordic/ncs/v2.9.1/`
 
 For linux users, it is typically at `~/ncs/v2.9.1/`
