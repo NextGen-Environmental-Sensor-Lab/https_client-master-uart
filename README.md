@@ -6,13 +6,17 @@ Before getting started, make sure you have a proper nRF Connect SDK development 
 Follow the official
 [Installation guide](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/installation/install_ncs.html).
 
-### -----------> IMPORTANT PATCH <------------
+### IMPORTANT PATCH 
 For OTA to work with `github.com`, modify the file `nrf/subsys/net/lib/download_client/src/download_client.c` set sockopt to verify = OPTIONAL;
 
 Above file `download_client.c` can be found in the `nrf` folder where the NCS toolchain has been installed. 
 
+note:
+
 For mac users, it is typically at `/opt/nordic/ncs/v2.9.1/`
+
 For linux users, it is typically at `~/ncs/v2.9.1/`
+
 For Windows users, it is typically at `C:/ncs/v2.9.1/`
 
 ## OTA instructions 
