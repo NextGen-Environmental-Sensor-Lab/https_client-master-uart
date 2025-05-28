@@ -344,7 +344,7 @@ clean_up:
                         str_ptr++;
                 }
                 /* Load the version string into a local buffer */
-                while ((*str_ptr != '\r' || *str_ptr != '\n') && idx < sizeof(ver_buf) - 1) {
+                while (*str_ptr != '\r' && *str_ptr != '\n' && idx < sizeof(ver_buf) - 1) {
                         ver_buf[idx++] = *str_ptr++;
                 }
                 /* Make sure ver_buf is NULL terminated (for safe use with strstr) */
@@ -371,7 +371,6 @@ clean_up:
                                 ota_url[idx++] = *url_ptr++;
                         }
                         ota_url[idx] = '\0';
-                        printk("extracted remote url for ota is: %s\r\n", ota_url);
 
                         /* Now check whether the url is valid before passing it to ota library */
                         const char *https_pattern = "https://";

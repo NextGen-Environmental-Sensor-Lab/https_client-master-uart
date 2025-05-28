@@ -39,8 +39,11 @@ K_SEM_DEFINE(data_acq_start_sem, 0, 1);
  * for reliable timing and dutycycle */
 K_TIMER_DEFINE(data_acq_timer, data_acq_timer_callback, NULL);
 /* Data acq timer runs out and gives this sem to data acquisition 
- * thread indicating it is time to sense */
-K_SEM_DEFINE(time_to_sense_sem, 0, 1);
+ * thread indicating it is time to sense 
+ *
+ * start with a intial value of 1 so you don't wait dutycycle period for the first time 
+ */
+K_SEM_DEFINE(time_to_sense_sem, 1, 1);
 
 void data_acq_entry(void *a, void *b, void *c) {
         printk("Data thread starting...\n");
