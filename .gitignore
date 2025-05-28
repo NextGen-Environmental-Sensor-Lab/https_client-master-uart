@@ -5,3 +5,9 @@
 # build
 /build*/
 .vscode/settings.json
+
+**/.cache/**
+**/.vscode/**
+
+.DS_Store
+.DS_Store

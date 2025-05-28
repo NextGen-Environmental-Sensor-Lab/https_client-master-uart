@@ -6,6 +6,8 @@
 
 cmake_minimum_required(VERSION 3.20.0)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(https_client)
 
@@ -19,19 +21,6 @@ generate_inc_file_for_target(
     # cert/webhook_RootCA.pem
     # ${gen_dir}/webhook_RootCA.pem.inc   #loaded with google cert
     )
-
-# NORDIC SDK APP START
-# target_sources(app PRIVATE 
-#                 src/main.c
-#                 src/https_handler.h
-#                 src/https_handler.c
-#                 # src/rg15.h
-#                 # src/rg15.c
-#                 src/uart_handler.h
-#                 src/uart_handler.c
-#                 src/data_acq.h
-#                 src/data_acq.c)
-
 
 FILE(GLOB app_sources src/*.c src/*.h)
 target_sources(app PRIVATE ${app_sources})

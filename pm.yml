@@ -1,0 +1,37 @@
+mcuboot:
+  address: 0x00000000
+  size: 0xc000
+
+EMPTY_0:
+  placement:
+    after: [mcuboot]
+  size: 0x4000
+
+mcuboot_primary:
+  address: 0x00010000
+  size: 0x70000
+
+mcuboot_pad:
+  address: 0x00010000
+  size: 0x200
+
+tfm_secure:
+  address: 0x00010200
+  size: 0x7e00
+
+tfm_nonsecure:
+  address: 0x00018000
+  size: 0x68000
+
+mcuboot_secondary:
+  address: 0x00080000
+  size: 0x70000
+
+EMPTY_2:
+  address: 0x000f0000
+  size: 0x8000
+
+EMPTY_1:
+  address: 0x000fe000
+  size: 0x2000
+

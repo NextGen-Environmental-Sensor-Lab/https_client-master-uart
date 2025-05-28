@@ -109,8 +109,6 @@ int uart_init(const struct device *dev) {
     return 0;
 }
 
-static char buff[1024];
-
 void uart_thread_entry(void *a, void *b, void *c) {
 
 	printk("UART thread starting...\n");

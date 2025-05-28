@@ -1,0 +1,13 @@
+ColumnLimit: 120
+IndentWidth: 8
+
+AllowShortEnumsOnASingleLine: False
+AllowShortCaseLabelsOnASingleLine: False
+AllowShortFunctionsOnASingleLine: None 
+
+AlignConsecutiveAssignments: AcrossEmptyLines
+AlignArrayOfStructures: Left
+AlignConsecutiveMacros: AcrossEmptyLines
+  
+BinPackArguments: false    # Disables packing multiple arguments on the same line
+AllowAllArgumentsOnNextLine: false  # Prevents breaking all arguments to the next line
