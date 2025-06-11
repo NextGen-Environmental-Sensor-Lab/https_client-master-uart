@@ -20,6 +20,9 @@ For Windows users, it is typically at `C:/ncs/v2.9.1/`
 ## OTA instructions 
 
 ### Uploding the image to GitHub.com
+1. Pristine build the project.
+2. OTA image is generated as `zephyr.signed.bin` in `/build/https_client-master-uart/zephyr/` folder.
+3. Copy `zephyr.signed.bin` to `/compiled_ota_images` folder and rename it to your liking -- include versioning in the name to keep track!!!
 
 ### Triggering the update
 On NGENS nodeRED `LTE_rg15` flow edit `prepIncomingData` node contents, especially the lines below, to setup OTA.
