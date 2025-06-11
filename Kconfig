@@ -6,6 +6,12 @@
 
 menu "HTTPS client sample"
 
+config WATCHDOG_APPLICATION_TIMEOUT_SEC
+	int "Application watchdog timeout in seconds"
+	default 10
+	help 
+	  Should be more than 1 second
+
 config SAMPLE_TFM_MBEDTLS
 	bool "Use TF-M and MbedTLS"
 	depends on NRF_MODEM_LIB

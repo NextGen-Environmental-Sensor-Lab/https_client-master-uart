@@ -45,7 +45,7 @@ void my_timer_handler(struct k_timer *dummy) {
         sys_reboot(SYS_REBOOT_COLD);
 }
 
-K_MSGQ_DEFINE(https_send_queue, SEND_BUF_SIZE, 10, 16);
+K_MSGQ_DEFINE(https_send_queue, SEND_BUF_SIZE, 32, 16);
 
 static char send_buf[SEND_BUF_SIZE];
 static char recv_buf[RECV_BUF_SIZE];
@@ -53,6 +53,8 @@ static int httpPostLen;
 static bool parse_https_rsp_for_ota_info = false;
 
 static K_SEM_DEFINE(network_connected_sem, 0, 1);
+
+volatile bool https_handler_alive;
 
 extern struct k_sem data_acq_start_sem;
 /* Certificate for `example.com` */
@@ -442,10 +444,10 @@ void https_thread_entry(void *a, void *b, void *c) {
         printk("HTTPS thread starting...\n");
 
         while (1) {
-                /* Wait forever until there is a message in the https_send_queue */
-                if (k_msgq_get(&https_send_queue, &send_buf, K_FOREVER) == 0) {
+                /* Wait for a few seconds to see if there is a message in the https_send_queue */
+                if (k_msgq_get(&https_send_queue, &send_buf, K_SECONDS(3)) == 0) {
                         send_http_request();
                 }
-                k_sleep(K_SECONDS(1));
+                k_sleep(K_SECONDS(3));
         }
 }

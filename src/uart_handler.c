@@ -18,8 +18,10 @@ extern struct k_sem get_reading_sem;
 extern struct k_msgq https_send_queue;
 extern struct k_sem data_ready_sem;
 
+volatile bool uart_handler_alive;
+
 /* queue to store up to 10 messages (aligned to 4-byte boundary) */
-K_MSGQ_DEFINE(uart1_msgq, MSG_SIZE, 10, 4);
+K_MSGQ_DEFINE(uart1_msgq, MSG_SIZE, 32, 4);
 
 const struct device *const my_uart1 = DEVICE_DT_GET(DEV_OTHER);
 
@@ -117,10 +119,11 @@ void uart_thread_entry(void *a, void *b, void *c) {
 		/* Check if there is a message in the uart1_msgq
 		 * RG-15 messages are received via UART1 
 		 */
-		if (k_msgq_get(&uart1_msgq, &rx_buf, K_FOREVER) == 0) {
+		if (k_msgq_get(&uart1_msgq, &rx_buf, K_SECONDS(3)) == 0) {
 			printk("mssg from uart1: %s\r\n", rx_buf);	
 			parse_data_and_queue_https_message();
 		}
+		uart_handler_alive = true;
         /* Give control to other threads to do their thing */
         k_sleep(K_MSEC(100));
 	}

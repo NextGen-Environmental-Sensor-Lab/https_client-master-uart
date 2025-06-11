@@ -11,6 +11,7 @@
 #include "https_handler.h"
 #include "uart_handler.h"
 #include "update.h"
+#include "watchdog.h"
 
 #define UART_THREAD_STACK_SIZE     2 * 1024
 #define HTTPS_THREAD_STACK_SIZE    2 * 1024
@@ -19,16 +20,19 @@
 K_THREAD_STACK_DEFINE(uart_thread_stack, UART_THREAD_STACK_SIZE);
 K_THREAD_STACK_DEFINE(https_thread_stack, HTTPS_THREAD_STACK_SIZE);
 K_THREAD_STACK_DEFINE(data_acq_thread_stack, DATA_ACQ_THREAD_STACK_SIZE);
+K_THREAD_STACK_DEFINE(watchdog_thread_area, 4096);
 
 static struct k_thread uart_thread;
 static struct k_thread https_thread;
 static struct k_thread data_acq_thread;
+static struct k_thread watchdog_thread_data;
 
 // static const struct device *gpio_port = DEVICE_DT_GET(DT_NODELABEL(gpio0));
 
 extern void uart_thread_entry(void *, void *, void *);
 extern void https_thread_entry(void *, void *, void *);
 extern void data_acq_entry(void *, void *, void *);
+extern void watchdog_feeder_thread(void *, void *, void *);
 
 extern const struct device *const my_uart1;
 
@@ -97,6 +101,16 @@ int main(void) {
                         0,
                         K_NO_WAIT);
 
+        k_thread_create(&watchdog_thread_data, 
+                        watchdog_thread_area, 
+                        K_THREAD_STACK_SIZEOF(watchdog_thread_area), 
+                        watchdog_feeder_thread,
+                        NULL, 
+                        NULL, 
+                        NULL, 
+                        8, 
+                        0, 
+                        K_NO_WAIT);
         while (1) {
                 k_sleep(K_FOREVER);
         }
