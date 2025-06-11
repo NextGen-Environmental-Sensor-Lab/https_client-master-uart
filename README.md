@@ -19,6 +19,9 @@ For Windows users, it is typically at `C:/ncs/v2.9.1/`
 
 ## OTA instructions 
 
+### Uploding the image to GitHub.com
+
+### Triggering the update
 On NGENS nodeRED `LTE_rg15` flow edit `prepIncomingData` node contents, especially the lines below, to setup OTA.
 
 ```

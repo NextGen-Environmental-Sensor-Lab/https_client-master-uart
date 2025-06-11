@@ -55,6 +55,7 @@ static bool parse_https_rsp_for_ota_info = false;
 static K_SEM_DEFINE(network_connected_sem, 0, 1);
 
 volatile bool https_handler_alive;
+bool ota_session_in_progress = false;
 
 extern struct k_sem data_acq_start_sem;
 /* Certificate for `example.com` */
@@ -335,7 +336,8 @@ clean_up:
         (void)close(fd);
 
         /* Runs only when recv buffer is loaded and there is a fw_ver header in the received headers */
-        if (parse_https_rsp_for_ota_info) {
+        /* Check whether there is already an OTA running */
+        if (!ota_session_in_progress && parse_https_rsp_for_ota_info) {
                 int idx          = 0;
                 char ver_buf[32] = {0};
 
@@ -448,6 +450,11 @@ void https_thread_entry(void *a, void *b, void *c) {
                 if (k_msgq_get(&https_send_queue, &send_buf, K_SECONDS(3)) == 0) {
                         send_http_request();
                 }
+                
+                /* Feed the dog */
+                https_handler_alive = true;
+
+                /* Context switching happens here */
                 k_sleep(K_SECONDS(3));
         }
 }

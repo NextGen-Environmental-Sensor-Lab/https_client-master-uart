@@ -66,7 +66,7 @@ void watchdog_feeder_thread(void *arg1, void *arg2, void *arg3) {
 
 	while(1) {
 		k_sleep(K_MSEC(WDT_FEED_INTERVAL));
-		
+
 		if (ALL_THREADS_ALIVE) {
 			uart_handler_alive = https_handler_alive = false;
 			/* Feed the dog */

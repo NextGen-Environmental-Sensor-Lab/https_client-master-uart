@@ -15,6 +15,8 @@
  * which might be fatal */
 bool ota_handler_ready       = false;
 
+extern bool ota_session_in_progress;
+
 static enum fota_state state = IDLE;
 static struct k_work fota_work;
 
@@ -145,10 +147,12 @@ static int apply(void) {
 static void fota_dl_handler(const struct fota_download_evt *evt) {
         switch (evt->id) {
         case FOTA_DOWNLOAD_EVT_PROGRESS:
+                ota_session_in_progress = true;
                 break;
         case FOTA_DOWNLOAD_EVT_ERROR:
                 printk("Received error from fota_download\n");
                 apply_ota_state(CONNECTED);
+                ota_session_in_progress = false;
                 break;
         case FOTA_DOWNLOAD_EVT_FINISHED:
                 apply_ota_state(UPDATE_PENDING);
