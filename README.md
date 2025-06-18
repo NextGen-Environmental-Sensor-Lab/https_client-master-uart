@@ -4,7 +4,7 @@
 
 Before getting started, make sure you have a proper nRF Connect SDK development environment with NCS version v2.9.1.
 Follow the official
-[Installation guide](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/installation/install_ncs.html).
+[Installation guide](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/installation/install_ncs.html). To install v2.9.1 SDK and Toolchain.
 
 ### IMPORTANT PATCH 
 For OTA to work with `github.com`, modify the file `nrf/subsys/net/lib/download_client/src/download_client.c` set sockopt to verify = OPTIONAL;
