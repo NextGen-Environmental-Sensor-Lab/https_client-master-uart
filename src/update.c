@@ -9,6 +9,7 @@
 #include <zephyr/net/http/parser_url.h>
 #include <zephyr/sys/reboot.h>
 
+
 /* flag to let uart_handler know that the
  * ota handler is ready. Used to prevent
  * premature invocation of the ota handler

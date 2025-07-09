@@ -3,6 +3,9 @@
 
 #define OTA_TLS_SEC_TAG 23459
 
+#define CONFIG_DOWNLOAD_CLIENT_MAX_HOSTNAME_SIZE 255
+#define CONFIG_DOWNLOAD_CLIENT_MAX_FILENAME_SIZE 255
+
 /* states that the update process can be in
  *
  * IDLE: when the network is disconnected
