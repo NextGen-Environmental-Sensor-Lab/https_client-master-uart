@@ -1,4 +1,5 @@
 #include "https_handler.h"
+#include "console.h"
 #include "data_acq.h"
 #include "main.h"
 #include "update.h"
@@ -39,23 +40,18 @@ void my_timer_handler(struct k_timer *dummy);
 
 K_TIMER_DEFINE(my_timer, my_timer_handler, NULL);
 
-void my_timer_handler(struct k_timer *dummy) {
-        printk("Sensor LTE has been offline for atleast %d minutes. Rebooting...\n", LTE_NETWORK_CONN_TIMEOUT_MINUTES);
-        lte_lc_power_off();
-        sys_reboot(SYS_REBOOT_COLD);
-}
-
 K_MSGQ_DEFINE(https_send_queue, SEND_BUF_SIZE, 32, 16);
 
 static char send_buf[SEND_BUF_SIZE];
 static char recv_buf[RECV_BUF_SIZE];
 static int httpPostLen;
-static bool parse_https_rsp_for_ota_info = false;
 
 static K_SEM_DEFINE(network_connected_sem, 0, 1);
 
 volatile bool https_handler_alive;
 bool ota_session_in_progress = false;
+
+static void process_received_bytes(void);
 
 extern struct k_sem data_acq_start_sem;
 /* Certificate for `example.com` */
@@ -237,8 +233,109 @@ static void lte_lc_handler(const struct lte_lc_evt *const evt) {
         }
 }
 
+static void process_received_bytes(void) {
+        int idx;
+        char *str_ptr;
+
+        /* OTA command check */
+        if (!ota_session_in_progress && strstr(recv_buf, "fw_ver") != NULL) {
+                char ver_buf[32];
+
+                str_ptr = strstr(recv_buf, "fw_ver");
+                str_ptr += strlen("fw_ver:");
+                /* skip white spaces */
+                while (*str_ptr == ' ') {
+                        str_ptr++;
+                }
+
+                /* Load the version string into a local buffer */
+                idx = 0;
+                while (*str_ptr && *str_ptr != '\r' && *str_ptr != '\n' && idx < sizeof(ver_buf) - 1) {
+                        ver_buf[idx++] = *str_ptr++;
+                }
+                /* Make sure ver_buf is NULL terminated (for safe use with strstr) */
+                ver_buf[idx] = '\0';
+
+                printk("remote firmware version is: %s\r\n", ver_buf);
+
+                /* Check if it didn't match our version and it is atleast as big to be a valid version string */
+                if (strstr(ver_buf, APP_FW_VERSION) == NULL && strlen(ver_buf) > 4) {
+                        printk("There is a firmware version mismatch\r\n");
+
+                        /* get the link */
+                        char *url_ptr = strstr(recv_buf, "fw_ota_url");
+                        if (url_ptr == NULL) {
+                                printk("didn't find fw_ota_url in reponse headers, aborting ota...\r\n");
+                                return;
+                        }
+                        url_ptr += strlen("fw_ota_url: ");
+
+                        idx = 0;
+                        memset(ota_url, 0, sizeof(ota_url));
+
+                        while (*url_ptr && (*url_ptr != '\r' || *url_ptr != '\n') && idx < sizeof(ota_url) - 1) {
+                                ota_url[idx++] = *url_ptr++;
+                        }
+                        ota_url[idx] = '\0';
+
+                        /* Now check whether the url is valid before passing it to ota library */
+                        const char *https_pattern = "https://";
+                        char *parser_ptr          = strstr(ota_url, https_pattern);
+                        if (parser_ptr == NULL) {
+                                printk("ota error: https:// not found in url, currently only supports https");
+                                return;
+                        }
+                        parser_ptr += strlen(https_pattern);
+
+                        memset(ota_hostname, '\0', sizeof(ota_hostname));
+                        memset(ota_filename, '\0', sizeof(ota_filename));
+
+                        idx = 0;
+                        while (*parser_ptr && *parser_ptr != '/' &&
+                               idx < CONFIG_DOWNLOAD_CLIENT_MAX_HOSTNAME_SIZE - 1) {
+                                ota_hostname[idx++] = *parser_ptr++;
+                        }
+                        ota_hostname[idx] = '\0';
+
+                        idx               = 0;
+                        parser_ptr++;
+                        while (*parser_ptr && *parser_ptr != '\0' && *parser_ptr != '\r' && *parser_ptr != '\n' &&
+                               idx < CONFIG_DOWNLOAD_CLIENT_MAX_FILENAME_SIZE - 1) {
+                                ota_filename[idx++] = *parser_ptr++;
+                        }
+                        ota_filename[idx] = '\0';
+
+                        /* This triggers ota process */
+                        apply_ota_state(UPDATE_DOWNLOAD);
+                }
+        }
+
+        /* Regular command check */
+        if (strstr(recv_buf, "CMD_") != NULL) {
+                char cmd_buf[CONSOLE_MSG_SIZE];
+
+                str_ptr = strstr(recv_buf, "CMD_");
+
+                /* load the command and queue it to the console */
+                idx = 0;
+                while (*str_ptr && *str_ptr != '\r' && *str_ptr != '\n' && idx < sizeof(cmd_buf) - 1) {
+                        cmd_buf[idx++] = *str_ptr++;
+                }
+                cmd_buf[idx] = '\0';
+
+                if (idx == 0) {
+                        /* NOT a valid command */
+                        return;
+                }
+
+		/* console queue command makes a copy of the command and forwards 
+		 * it to the message queue so it is thread safe 
+		 */
+                console_queue_command(cmd_buf);
+        }
+}
+
 static void send_http_request(void) {
-        parse_https_rsp_for_ota_info = false;
         int err;
         int fd;
         int bytes;
@@ -323,90 +420,13 @@ static void send_http_request(void) {
                 recv_buf[sizeof(recv_buf) - 1] = '\0';
         }
 
-        char *str_ptr = strstr(recv_buf, "fw_ver");
-
-        if (str_ptr != NULL) {
-                parse_https_rsp_for_ota_info = true;
-        }
+        process_received_bytes();
 
 clean_up:
         printk("Finished, closing socket.\n");
 
         freeaddrinfo(res);
         (void)close(fd);
-
-        /* Runs only when recv buffer is loaded and there is a fw_ver header in the received headers */
-        /* Check whether there is already an OTA running */
-        if (!ota_session_in_progress && parse_https_rsp_for_ota_info) {
-                int idx          = 0;
-                char ver_buf[32] = {0};
-
-		str_ptr = strstr(recv_buf, "fw_ver");
-                str_ptr += strlen("fw_ver:");
-                /* skip white spaces */
-                while (*str_ptr == ' ') {
-                        str_ptr++;
-                }
-                /* Load the version string into a local buffer */
-                while (*str_ptr != '\r' && *str_ptr != '\n' && idx < sizeof(ver_buf) - 1) {
-                        ver_buf[idx++] = *str_ptr++;
-                }
-                /* Make sure ver_buf is NULL terminated (for safe use with strstr) */
-                ver_buf[idx] = '\0';
-
-                printk("remote firmware version is: %s\r\n", ver_buf);
-
-                /* Check if it didn't match our version and it is atleast as big to be a valid version string */
-                if (strstr(ver_buf, APP_FW_VERSION) == NULL && strlen(ver_buf) > 4) {
-                        printk("There is a firmware version mismatch\r\n");
-
-                        /* get the link */
-                        char *url_ptr = strstr(recv_buf, "fw_ota_url");
-                        if (url_ptr == NULL) {
-                                printk("didn't find fw_ota_url in reponse headers, aborting ota...\r\n");
-                                goto clean_up;
-                        }
-                        url_ptr += strlen("fw_ota_url: ");
-
-                        idx = 0;
-                        memset(ota_url, 0, sizeof(ota_url));
-
-                        while (*url_ptr && (*url_ptr != '\r' || *url_ptr != '\n') && idx < sizeof(ota_url) - 1) {
-                                ota_url[idx++] = *url_ptr++;
-                        }
-                        ota_url[idx] = '\0';
-
-                        /* Now check whether the url is valid before passing it to ota library */
-                        const char *https_pattern = "https://";
-                        char *parser_ptr          = strstr(ota_url, https_pattern);
-                        if (parser_ptr == NULL) {
-                                printk("ota error: https:// not found in url, currently only supports https");
-                                goto clean_up;
-                        }
-                        parser_ptr += strlen(https_pattern);
-
-                        memset(ota_hostname, '\0', sizeof(ota_hostname));
-                        memset(ota_filename, '\0', sizeof(ota_filename));
-
-                        idx = 0;
-                        while (*parser_ptr && *parser_ptr != '/' &&
-                               idx < CONFIG_DOWNLOAD_CLIENT_MAX_HOSTNAME_SIZE - 1) {
-                                ota_hostname[idx++] = *parser_ptr++;
-                        }
-                        ota_hostname[idx] = '\0';
-
-                        idx               = 0;
-                        parser_ptr++;
-                        while (*parser_ptr && *parser_ptr != '\0' && *parser_ptr != '\r' &&*parser_ptr != '\n' &&
-                               idx < CONFIG_DOWNLOAD_CLIENT_MAX_FILENAME_SIZE - 1) {
-                                ota_filename[idx++] = *parser_ptr++;
-                        }
-                        ota_filename[idx] = '\0';
-
-                        /* This triggers ota process */
-                        apply_ota_state(UPDATE_DOWNLOAD);
-                }
-        }
 }
 
 int https_init(void) {
@@ -442,6 +462,12 @@ int https_init(void) {
         return 0;
 }
 
+void my_timer_handler(struct k_timer *dummy) {
+        printk("Sensor LTE has been offline for atleast %d minutes. Rebooting...\n", LTE_NETWORK_CONN_TIMEOUT_MINUTES);
+        lte_lc_power_off();
+        sys_reboot(SYS_REBOOT_COLD);
+}
+
 void https_thread_entry(void *a, void *b, void *c) {
         printk("HTTPS thread starting...\n");
 
@@ -450,7 +476,7 @@ void https_thread_entry(void *a, void *b, void *c) {
                 if (k_msgq_get(&https_send_queue, &send_buf, K_SECONDS(3)) == 0) {
                         send_http_request();
                 }
-                
+
                 /* Feed the dog */
                 https_handler_alive = true;
 

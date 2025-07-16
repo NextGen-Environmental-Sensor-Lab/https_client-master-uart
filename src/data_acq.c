@@ -5,6 +5,7 @@
 
 #include <date_time.h>
 #include <modem/modem_info.h>
+#include <string.h>
 #include <zephyr/logging/log.h>
 
 #include <ctype.h>
@@ -13,6 +14,8 @@
 /* signal_strength, ip, iccid, imei, current_band, tracking_area_code,
  * device_cell_id */
 #define NETWORK_PARAMS_DATA "%s,%s,%s,%s,%s,%s,%s"
+
+static bool reset_reason_sent = false;
 
 static char buff[1024];
 
@@ -28,6 +31,7 @@ extern char rx_buf[MSG_SIZE]; // receive buffer used in UART ISR callback
 extern char clean_buff[MSG_SIZE];
 static char uart_send[SEND_BUF_SIZE];
 static char network_info[512];
+extern char reset_reason_str[128];
 
 extern struct k_msgq https_send_queue;
 
@@ -35,13 +39,13 @@ static void data_acq_timer_callback(struct k_timer *dummy);
 
 K_SEM_DEFINE(data_acq_start_sem, 0, 1);
 
-/* Data acq timer controls the periodicity, use this instead of sleep 
+/* Data acq timer controls the periodicity, use this instead of sleep
  * for reliable timing and dutycycle */
 K_TIMER_DEFINE(data_acq_timer, data_acq_timer_callback, NULL);
-/* Data acq timer runs out and gives this sem to data acquisition 
- * thread indicating it is time to sense 
+/* Data acq timer runs out and gives this sem to data acquisition
+ * thread indicating it is time to sense
  *
- * start with a intial value of 1 so you don't wait dutycycle period for the first time 
+ * start with a intial value of 1 so you don't wait dutycycle period for the first time
  */
 K_SEM_DEFINE(time_to_sense_sem, 1, 1);
 
@@ -53,16 +57,18 @@ void data_acq_entry(void *a, void *b, void *c) {
          * netowrk for the first time after boot.
          */
         k_sem_take(&data_acq_start_sem, K_FOREVER);
-	k_timer_start(&data_acq_timer, K_SECONDS(DEFAULT_DATA_ACQ_PERIODICITY), K_SECONDS(DEFAULT_DATA_ACQ_PERIODICITY));
+        k_timer_start(&data_acq_timer,
+                      K_SECONDS(DEFAULT_DATA_ACQ_PERIODICITY),
+                      K_SECONDS(DEFAULT_DATA_ACQ_PERIODICITY));
 
         while (1) {
-		/* wait until timer goes off */
-		k_sem_take(&time_to_sense_sem, K_FOREVER);
+                /* wait until timer goes off */
+                k_sem_take(&time_to_sense_sem, K_FOREVER);
 
                 printk("Request measurement from RG-15...\r\n");
                 print_uart(my_uart1, "R\r\n");
 
-		/* Let other threads run */
+                /* Let other threads run */
                 k_sleep(K_MSEC(100));
         }
 }
@@ -87,7 +93,15 @@ static int prepare_network_info(char *buf, uint32_t max_buf_len) {
         modem_info_string_get(MODEM_INFO_CELLID, device_cell_id, sizeof(device_cell_id));
 
         /* Format the network parameters string */
-        ret = snprintf(buf, max_buf_len, NETWORK_PARAMS_DATA, signal_strength, ip, iccid, imei, current_band, tracking_area_code,
+        ret = snprintf(buf,
+                       max_buf_len,
+                       NETWORK_PARAMS_DATA,
+                       signal_strength,
+                       ip,
+                       iccid,
+                       imei,
+                       current_band,
+                       tracking_area_code,
                        device_cell_id);
 
         return ret;
@@ -128,6 +142,7 @@ void parse_data_and_queue_https_message(void) {
         int idx = 0;
         char *data_ptr;
         int ret;
+        char *buff_ptr;
 
         /* For the rg15 'Acc' is the first word in data string*/
         if (strstr(rx_buf, "Acc") == NULL) {
@@ -169,10 +184,21 @@ void parse_data_and_queue_https_message(void) {
         int64_to_str(time_now, time_now_str);
 
         ret = snprintf(buff, sizeof(buff), DATA_ACQ_POST_PAYLOAD, time_now_str, clean_buff, batt_reading, network_info);
-        ret = snprintf(uart_send, sizeof(uart_send), HTTPS_POST_REQUEST, DATA_ACQ_HTTPS_TARGET, DATA_ACQ_HTTPS_HOSTNAME,
+        if (!reset_reason_sent) {
+		/* Append the reset reason string */
+                buff_ptr = strncat(buff, reset_reason_str, 128);
+        } else {
+		/* pass as is */
+		buff_ptr = buff;
+	}
+        ret = snprintf(uart_send,
+                       sizeof(uart_send),
+                       HTTPS_POST_REQUEST,
+                       DATA_ACQ_HTTPS_TARGET,
+                       DATA_ACQ_HTTPS_HOSTNAME,
                        DATA_ACQ_HTTPS_PORT,
                        ret,   // length of the payload
-                       buff); // payload
+                       buff_ptr); // payload
 
         if (ret > 0 && k_msgq_put(&https_send_queue, uart_send, K_NO_WAIT) == 0) {
                 printk("Successfully PARSED and QUEUED from UART thread to HTTPS thread: "
@@ -197,5 +223,5 @@ int data_acq_init(void) {
 }
 
 void data_acq_timer_callback(struct k_timer *dummy) {
-	k_sem_give(&time_to_sense_sem);
+        k_sem_give(&time_to_sense_sem);
 }
