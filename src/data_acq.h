@@ -20,7 +20,7 @@
         "\"modem_fw_ver\": \"%s\","                                                                                    \
         "}"
 
-#define DEFAULT_DATA_ACQ_PERIODICITY 600 // 10 minutes
+#define DEFAULT_DATA_ACQ_PERIODICITY 60 // 1 minutes
 
 void parse_data_and_queue_https_message(void);
 int data_acq_init(void);
