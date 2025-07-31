@@ -1,10 +1,13 @@
 #include "battery.h"
 
 #include <zephyr/drivers/adc.h>
+#include <zephyr/drivers/gpio.h>
 
 #define ADC_NODE DT_NODELABEL(adc)
 static int16_t m_sample_buffer[BUFFER_SIZE];
 static const struct device *adc_dev;
+
+static const struct device *gpio_dev = DEVICE_DT_GET(DT_NODELABEL(gpio0));
 
 static const struct adc_channel_cfg m_1st_channel_cfg = {
     .gain             = ADC_GAIN,
@@ -47,6 +50,8 @@ int get_battery_voltage(uint16_t *battery_voltage) {
 
 bool init_adc(void) {
         int err;
+
+        gpio_pin_configure(gpio_dev, 25, GPIO_OUTPUT_ACTIVE);
 
         adc_dev = DEVICE_DT_GET(ADC_NODE);
         if (!adc_dev) {
